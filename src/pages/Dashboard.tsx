@@ -7,6 +7,8 @@ import { DocumentNotifications } from "@/components/DocumentNotifications";
 import { useToast } from "@/hooks/use-toast";
 import { Leaf, FileText, Users, Settings, LogOut, Upload } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
+import { DashboardStats } from "@/components/DashboardStats";
+import { DocumentsChart } from "@/components/DocumentsChart";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -95,6 +97,16 @@ const Dashboard = () => {
           <p className="text-muted-foreground">
             Bem-vindo ao SignDoc, {user?.user_metadata?.full_name || "Usuário"}!
           </p>
+        </div>
+
+        {/* Statistics */}
+        <div className="mb-8">
+          <DashboardStats />
+        </div>
+
+        {/* Chart */}
+        <div className="mb-8">
+          <DocumentsChart />
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

@@ -8,6 +8,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import DocumentsList from "./pages/DocumentsList";
 import DocumentUpload from "./pages/DocumentUpload";
+import DocumentDetail from "./pages/DocumentDetail";
 import TenantManagement from "./pages/TenantManagement";
 import NotFound from "./pages/NotFound";
 
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/documents" element={<DocumentsList />} />
           <Route path="/documents/upload" element={<DocumentUpload />} />
+          <Route path="/documents/:id" element={<DocumentDetail />} />
           <Route path="/tenants" element={<TenantManagement />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
