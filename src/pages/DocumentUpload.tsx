@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Logo } from "@/components/Logo";
 import { 
   Upload, 
   FileText, 
@@ -168,16 +169,13 @@ export default function DocumentUpload() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/documents')}>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      <header className="border-b bg-card/80 backdrop-blur-lg shadow-elegant">
+        <div className="container flex h-20 items-center">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/documents')} className="hover:bg-primary/10">
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div className="flex items-center gap-2 ml-4">
-            <Upload className="w-6 h-6 text-primary" />
-            <h1 className="text-xl font-bold">Enviar Documento</h1>
-          </div>
+          <Logo size="md" className="ml-4" />
         </div>
       </header>
 

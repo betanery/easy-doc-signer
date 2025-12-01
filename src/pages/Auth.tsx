@@ -1,14 +1,13 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Leaf } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Logo } from "@/components/Logo";
+import { useState } from "react";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -16,78 +15,16 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-
-  useEffect(() => {
-    // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate("/dashboard");
-      }
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session) {
-        navigate("/dashboard");
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
-          data: {
-            full_name: fullName,
-          },
-        },
-      });
-
-      if (error) {
-        if (error.message.includes("already registered")) {
-          toast({
-            title: "Email já cadastrado",
-            description: "Este email já está em uso. Tente fazer login.",
-            variant: "destructive",
-          });
-        } else {
-          throw error;
-        }
-      } else {
-        toast({
-          title: "Conta criada com sucesso!",
-          description: "Você já pode fazer login.",
-        });
-        setEmail("");
-        setPassword("");
-        setFullName("");
-      }
-    } catch (error: any) {
-      toast({
-        title: "Erro ao criar conta",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [signupName, setSignupName] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -96,12 +33,18 @@ const Auth = () => {
         if (error.message.includes("Invalid login credentials")) {
           toast({
             title: "Credenciais inválidas",
-            description: "Email ou senha incorretos.",
+            description: "Email ou senha incorretos",
             variant: "destructive",
           });
         } else {
           throw error;
         }
+      } else if (data.user) {
+        toast({
+          title: "Login realizado",
+          description: "Redirecionando...",
+        });
+        navigate("/dashboard");
       }
     } catch (error: any) {
       toast({
@@ -114,23 +57,67 @@ const Auth = () => {
     }
   };
 
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const redirectUrl = `${window.location.origin}/dashboard`;
+
+      const { data, error } = await supabase.auth.signUp({
+        email: signupEmail,
+        password: signupPassword,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: signupName,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        toast({
+          title: "Conta criada com sucesso!",
+          description: "Redirecionando...",
+        });
+        navigate("/dashboard");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro ao criar conta",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-mdsign-gradient-start to-mdsign-gradient-end flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 text-white mb-4">
-            <Leaf className="h-12 w-12" />
-            <span className="text-4xl font-bold">MDSign</span>
-          </Link>
-          <p className="text-white/90 text-lg">Assinatura digital sustentável</p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
+      <div className="w-full max-w-md space-y-8 animate-fade-up">
+        <div className="text-center">
+          <Logo size="lg" className="justify-center mb-4" />
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+            Bem-vindo ao MDSign
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Assinatura digital sustentável
+          </p>
         </div>
 
-        <Card>
+        <Card className="border-primary/20 shadow-premium backdrop-blur-sm bg-card/95">
           <Tabs defaultValue="signin">
             <CardHeader>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Login</TabsTrigger>
-                <TabsTrigger value="signup">Cadastro</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 bg-muted/50">
+                <TabsTrigger value="signin" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-glow data-[state=active]:text-white">
+                  Entrar
+                </TabsTrigger>
+                <TabsTrigger value="signup" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-glow data-[state=active]:text-white">
+                  Criar Conta
+                </TabsTrigger>
               </TabsList>
             </CardHeader>
 
@@ -157,18 +144,17 @@ const Auth = () => {
                     <Input
                       id="signin-password"
                       type="password"
-                      placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
                     />
                   </div>
                 </CardContent>
-                
+
                 <CardFooter>
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-primary hover:bg-primary/90"
+                  <Button
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-primary to-primary-glow hover:opacity-90"
                     disabled={loading}
                   >
                     {loading ? "Entrando..." : "Entrar"}
@@ -180,17 +166,17 @@ const Auth = () => {
             <TabsContent value="signup">
               <form onSubmit={handleSignUp}>
                 <CardContent className="space-y-4">
-                  <CardTitle>Crie sua conta</CardTitle>
-                  <CardDescription>Comece seu teste grátis de 7 dias agora</CardDescription>
+                  <CardTitle>Criar uma conta</CardTitle>
+                  <CardDescription>Preencha os dados abaixo para começar</CardDescription>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name">Nome completo</Label>
+                    <Label htmlFor="signup-name">Nome Completo</Label>
                     <Input
                       id="signup-name"
                       type="text"
-                      placeholder="João Silva"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="Seu nome"
+                      value={signupName}
+                      onChange={(e) => setSignupName(e.target.value)}
                       required
                     />
                   </div>
@@ -201,8 +187,8 @@ const Auth = () => {
                       id="signup-email"
                       type="email"
                       placeholder="seu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      value={signupEmail}
+                      onChange={(e) => setSignupEmail(e.target.value)}
                       required
                     />
                   </div>
@@ -212,19 +198,17 @@ const Auth = () => {
                     <Input
                       id="signup-password"
                       type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      value={signupPassword}
+                      onChange={(e) => setSignupPassword(e.target.value)}
                       required
-                      minLength={6}
                     />
                   </div>
                 </CardContent>
-                
+
                 <CardFooter>
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-mdsign-teal hover:bg-mdsign-teal/90"
+                  <Button
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-primary to-primary-glow hover:opacity-90"
                     disabled={loading}
                   >
                     {loading ? "Criando conta..." : "Criar Conta"}
@@ -234,12 +218,6 @@ const Auth = () => {
             </TabsContent>
           </Tabs>
         </Card>
-
-        <div className="text-center mt-6">
-          <Link to="/" className="text-white/80 hover:text-white transition-colors">
-            ← Voltar para home
-          </Link>
-        </div>
       </div>
     </div>
   );
