@@ -6,19 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { useLacunaSigner } from "@/hooks/useLacunaSigner";
-import { Leaf, ArrowLeft, Download, Trash2, UserPlus, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { useMDSignAPI } from "@/hooks/useMDSignAPI";
+import { Leaf, ArrowLeft, Download, Clock, CheckCircle2, XCircle } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 interface DocumentData {
   id: string;
@@ -43,9 +33,8 @@ const DocumentDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { getDocument, deleteDocument, loading } = useLacunaSigner();
+  const { getDocument, downloadDocument, loading } = useMDSignAPI();
   const [document, setDocument] = useState<DocumentData | null>(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -77,23 +66,9 @@ const DocumentDetail = () => {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDownload = async () => {
     if (!id) return;
-
-    try {
-      await deleteDocument(id);
-      toast({
-        title: "Documento excluído",
-        description: "O documento foi excluído com sucesso",
-      });
-      navigate("/documents");
-    } catch (error: any) {
-      toast({
-        title: "Erro ao excluir documento",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
+    await downloadDocument(id);
   };
 
   const getStatusBadge = (status: string) => {
@@ -222,22 +197,13 @@ const DocumentDetail = () => {
                 <CardTitle>Ações</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <Button variant="outline" className="w-full justify-start" disabled>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Adicionar Signatário
-                </Button>
-                <Button variant="outline" className="w-full justify-start" disabled>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={handleDownload}
+                >
                   <Download className="h-4 w-4 mr-2" />
                   Baixar Documento
-                </Button>
-                <Separator />
-                <Button
-                  variant="destructive"
-                  className="w-full justify-start"
-                  onClick={() => setShowDeleteDialog(true)}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Excluir Documento
                 </Button>
               </CardContent>
             </Card>
@@ -302,22 +268,6 @@ const DocumentDetail = () => {
           </div>
         </div>
       </main>
-
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir este documento? Esta ação não pode ser
-              desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Excluir</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

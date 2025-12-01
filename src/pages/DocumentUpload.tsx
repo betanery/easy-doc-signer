@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
-import { useLacunaSigner } from '@/hooks/useLacunaSigner';
+import { useMDSignAPI } from '@/hooks/useMDSignAPI';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,7 +29,7 @@ interface Signer {
 
 export default function DocumentUpload() {
   const navigate = useNavigate();
-  const { createDocument, loading } = useLacunaSigner();
+  const { createDocument, loading } = useMDSignAPI();
   const [file, setFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [description, setDescription] = useState('');
@@ -141,30 +141,18 @@ export default function DocumentUpload() {
       return;
     }
 
-    try {
-      const base64Content = await convertFileToBase64(file);
-      
-      const document = await createDocument({
-        fileName: file.name,
-        fileContent: base64Content,
-        signers: validSigners.map(s => ({
-          name: s.name,
-          email: s.email,
-          identifier: s.email
-        })),
-        description: description || undefined
-      });
+    const document = await createDocument({
+      name: file.name,
+      description: description || undefined,
+      file: file,
+      signers: validSigners.map(s => ({
+        name: s.name,
+        email: s.email
+      }))
+    });
 
-      if (document) {
-        navigate('/documents');
-      }
-    } catch (error: any) {
-      console.error('Error uploading document:', error);
-      toast({
-        title: "Erro ao enviar documento",
-        description: error.message || "Ocorreu um erro ao processar o documento",
-        variant: "destructive",
-      });
+    if (document) {
+      navigate('/documents');
     }
   };
 
