@@ -33,11 +33,12 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { DocumentNotifications } from '@/components/DocumentNotifications';
+import { Logo } from "@/components/Logo";
 import { 
   FileText, 
   Search, 
   Filter, 
-  Eye, 
+  Eye,
   Trash2, 
   UserPlus, 
   Download,
@@ -133,21 +134,18 @@ export default function DocumentsList() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      <header className="border-b bg-card/80 backdrop-blur-lg shadow-elegant">
+        <div className="container flex h-20 items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="hover:bg-primary/10">
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <div className="flex items-center gap-2">
-              <FileText className="w-6 h-6 text-primary" />
-              <h1 className="text-xl font-bold">Gerenciar Documentos</h1>
-            </div>
+            <Logo size="md" />
           </div>
           <div className="flex items-center gap-2">
             <DocumentNotifications />
-            <Button onClick={() => navigate('/documents/upload')}>
+            <Button onClick={() => navigate('/documents/upload')} className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
               <Upload className="w-4 h-4 mr-2" />
               Novo Documento
             </Button>

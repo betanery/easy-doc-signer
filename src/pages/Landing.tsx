@@ -174,7 +174,7 @@ const Landing = () => {
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-card/80 backdrop-blur-lg shadow-elegant">
         <div className="container flex h-20 items-center justify-between">
-          <Logo size="md" showText={false} />
+          <Logo size="md" />
           
           <nav className="hidden md:flex items-center gap-6">
             <a href="#beneficios" className="text-sm font-medium hover:text-primary transition-colors">
@@ -200,6 +200,44 @@ const Landing = () => {
           </div>
         </div>
       </header>
+
+      {/* Hero Section */}
+      <section className="relative overflow-hidden py-20 md:py-32 animate-fade-in">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-secondary/10" />
+        <div className="container relative z-10">
+          <div className="grid gap-12 lg:grid-cols-2 items-center">
+            <div className="space-y-8">
+              <Badge className="bg-gradient-to-r from-primary to-primary-glow text-white px-4 py-2 text-sm animate-scale-in">
+                🌳 Não use papel, plante uma árvore!
+              </Badge>
+              <h1 className="text-5xl md:text-7xl font-bold leading-tight bg-gradient-to-r from-primary via-primary-glow to-primary bg-clip-text text-transparent animate-fade-up">
+                Assine documentos em segundos. Economize tempo, reduza custos e salve o planeta!
+              </h1>
+              <p className="text-xl text-muted-foreground leading-relaxed animate-fade-up" style={{ animationDelay: "0.1s" }}>
+                Com o MDSign, você automatiza assinaturas, elimina papelada e ainda contribui com o meio ambiente.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 animate-fade-up" style={{ animationDelay: "0.2s" }}>
+                <Link to="/auth">
+                  <Button size="lg" className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90 hover:scale-105 transition-all text-lg px-8 shadow-premium">
+                    Comece Grátis Agora
+                  </Button>
+                </Link>
+                <Link to="/auth">
+                  <Button size="lg" variant="outline" className="border-primary hover:bg-primary/10 hover:scale-105 transition-all text-lg px-8">
+                    Acessar Minha Conta
+                  </Button>
+                </Link>
+              </div>
+            </div>
+            <div className="hidden lg:flex justify-center items-center relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-full blur-3xl animate-pulse" />
+              <div className="relative w-96 h-96 flex items-center justify-center">
+                <Leaf className="h-80 w-80 text-primary/40 animate-pulse" style={{ animationDuration: "3s" }} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-mdsign-gradient-start to-mdsign-gradient-end py-20 md:py-32">

@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Leaf, Plus, Edit, Users, ArrowLeft } from "lucide-react";
 import { TenantForm } from "@/components/TenantForm";
 import { TenantUsers } from "@/components/TenantUsers";
+import { Logo } from "@/components/Logo";
 
 interface Tenant {
   id: string;
@@ -126,14 +127,11 @@ const TenantManagement = () => {
 
   if (managingUsers) {
     return (
-      <div className="min-h-screen bg-background">
-        <header className="border-b bg-card">
-          <div className="container flex h-16 items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Leaf className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold text-primary">SignDoc</span>
-            </div>
-            <Button variant="ghost" onClick={() => setManagingUsers(null)}>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+        <header className="border-b bg-card/80 backdrop-blur-lg">
+          <div className="container flex h-20 items-center justify-between">
+            <Logo size="md" />
+            <Button variant="ghost" onClick={() => setManagingUsers(null)} className="hover:bg-primary/10">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar
             </Button>
@@ -149,19 +147,17 @@ const TenantManagement = () => {
 
   if (showCreateForm || editingTenant) {
     return (
-      <div className="min-h-screen bg-background">
-        <header className="border-b bg-card">
-          <div className="container flex h-16 items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Leaf className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold text-primary">SignDoc</span>
-            </div>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+        <header className="border-b bg-card/80 backdrop-blur-lg">
+          <div className="container flex h-20 items-center justify-between">
+            <Logo size="md" />
             <Button
               variant="ghost"
               onClick={() => {
                 setShowCreateForm(false);
                 setEditingTenant(null);
               }}
+              className="hover:bg-primary/10"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar
@@ -184,14 +180,11 @@ const TenantManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Leaf className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold text-primary">SignDoc</span>
-          </div>
-          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      <header className="border-b bg-card/80 backdrop-blur-lg">
+        <div className="container flex h-20 items-center justify-between">
+          <Logo size="md" />
+          <Button variant="ghost" onClick={() => navigate("/dashboard")} className="hover:bg-primary/10">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Dashboard
           </Button>

@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useLacunaSigner } from "@/hooks/useLacunaSigner";
 import { Leaf, ArrowLeft, Download, Trash2, UserPlus, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { Logo } from "@/components/Logo";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -130,14 +131,11 @@ const DocumentDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Leaf className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold text-primary">SignDoc</span>
-          </div>
-          <Button variant="ghost" onClick={() => navigate("/documents")}>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      <header className="border-b bg-card/80 backdrop-blur-lg">
+        <div className="container flex h-20 items-center justify-between">
+          <Logo size="md" />
+          <Button variant="ghost" onClick={() => navigate("/documents")} className="hover:bg-primary/10">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar
           </Button>
