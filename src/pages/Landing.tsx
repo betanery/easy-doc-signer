@@ -202,18 +202,18 @@ const Landing = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 md:py-32 animate-fade-in">
+      <section className="relative overflow-hidden py-16 md:py-24 animate-fade-in">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-secondary/10" />
         <div className="container relative z-10">
           <div className="grid gap-12 lg:grid-cols-2 items-center">
-            <div className="space-y-8">
+            <div className="space-y-6">
               <Badge className="bg-gradient-to-r from-primary to-primary-glow text-white px-4 py-2 text-sm animate-scale-in">
                 🌳 Não use papel, plante uma árvore!
               </Badge>
-              <h1 className="text-5xl md:text-7xl font-bold leading-tight bg-gradient-to-r from-primary via-primary-glow to-primary bg-clip-text text-transparent animate-fade-up">
+              <h1 className="text-4xl md:text-6xl font-bold leading-tight bg-gradient-to-r from-primary via-primary-glow to-primary bg-clip-text text-transparent animate-fade-up">
                 Assine documentos em segundos. Economize tempo, reduza custos e salve o planeta!
               </h1>
-              <p className="text-xl text-muted-foreground leading-relaxed animate-fade-up" style={{ animationDelay: "0.1s" }}>
+              <p className="text-lg md:text-xl text-muted-foreground leading-relaxed animate-fade-up" style={{ animationDelay: "0.1s" }}>
                 Com o MDSign, você automatiza assinaturas, elimina papelada e ainda contribui com o meio ambiente.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 animate-fade-up" style={{ animationDelay: "0.2s" }}>
@@ -231,52 +231,21 @@ const Landing = () => {
             </div>
             <div className="hidden lg:flex justify-center items-center relative">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-full blur-3xl animate-pulse" />
-              <div className="relative w-96 h-96 flex items-center justify-center">
-                <Leaf className="h-80 w-80 text-primary/40 animate-pulse" style={{ animationDuration: "3s" }} />
+              <div className="relative w-80 h-80 flex items-center justify-center">
+                <Leaf className="h-72 w-72 text-primary/40 animate-pulse" style={{ animationDuration: "3s" }} />
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-mdsign-gradient-start to-mdsign-gradient-end py-20 md:py-32">
-        <div className="container relative z-10">
-          <div className="grid gap-8 lg:grid-cols-2 items-center">
-            <div className="text-white space-y-6 animate-fade-in">
-              <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-                Assine documentos em segundos. Economize tempo, reduza custos e salve o planeta!
-              </h1>
-              <p className="text-xl text-white/90">
-                Com o SignDoc, você automatiza assinaturas, elimina papelada e ainda contribui com o meio ambiente.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/auth">
-                  <Button size="lg" className="bg-mdsign-teal hover:bg-mdsign-teal/90 text-lg px-8">
-                    Comece Grátis Agora
-                  </Button>
-                </Link>
-                <Link to="/auth">
-                  <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10 text-lg px-8">
-                    Acessar Minha Conta
-                  </Button>
-                </Link>
-              </div>
-            </div>
-            <div className="hidden lg:flex justify-center items-center">
-              <Leaf className="h-64 w-64 text-white/20 animate-pulse" />
             </div>
           </div>
         </div>
       </section>
 
       {/* Benefits Section */}
-      <section id="beneficios" className="py-20 bg-gradient-to-b from-background to-muted/30">
+      <section id="beneficios" className="py-16 md:py-20 bg-gradient-to-b from-background to-muted/30">
         <div className="container">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-3 bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
             Por que escolher o MDSign?
           </h2>
-          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+          <p className="text-center text-muted-foreground mb-10 max-w-2xl mx-auto">
             Tecnologia de ponta para transformar a forma como você assina documentos
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -303,13 +272,13 @@ const Landing = () => {
       </section>
 
       {/* Plans Section */}
-      <section id="planos" className="py-20">
+      <section id="planos" className="py-16 md:py-20">
         <div className="container">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-bold mb-3">
               Escolha o plano ideal para você
             </h2>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-lg md:text-xl text-muted-foreground">
               Todos os planos incluem 7 dias de teste grátis
             </p>
           </div>
@@ -362,9 +331,9 @@ const Landing = () => {
       </section>
 
       {/* FAQ Section */}
-      <section id="como-funciona" className="py-20 bg-secondary">
+      <section id="faq" className="py-16 md:py-20 bg-secondary">
         <div className="container max-w-3xl">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-10">
             Perguntas Frequentes
           </h2>
           <Accordion type="single" collapsible className="space-y-4">
