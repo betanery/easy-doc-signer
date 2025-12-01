@@ -83,21 +83,48 @@ export type Database = {
       }
       tenants: {
         Row: {
+          billing_cycle: string | null
+          cnpj: string | null
           created_at: string
+          docs_used_this_month: number | null
+          features: Json | null
           id: string
+          lacuna_api_key: string | null
+          lacuna_organization_id: string | null
+          max_users: number | null
+          monthly_doc_limit: number | null
           name: string
+          plan: string | null
           updated_at: string
         }
         Insert: {
+          billing_cycle?: string | null
+          cnpj?: string | null
           created_at?: string
+          docs_used_this_month?: number | null
+          features?: Json | null
           id?: string
+          lacuna_api_key?: string | null
+          lacuna_organization_id?: string | null
+          max_users?: number | null
+          monthly_doc_limit?: number | null
           name: string
+          plan?: string | null
           updated_at?: string
         }
         Update: {
+          billing_cycle?: string | null
+          cnpj?: string | null
           created_at?: string
+          docs_used_this_month?: number | null
+          features?: Json | null
           id?: string
+          lacuna_api_key?: string | null
+          lacuna_organization_id?: string | null
+          max_users?: number | null
+          monthly_doc_limit?: number | null
           name?: string
+          plan?: string | null
           updated_at?: string
         }
         Relationships: []
