@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DocumentNotifications } from "@/components/DocumentNotifications";
 import { useToast } from "@/hooks/use-toast";
-import { Leaf, FileText, Users, Settings, LogOut } from "lucide-react";
+import { Leaf, FileText, Users, Settings, LogOut, Upload } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 
 const Dashboard = () => {
@@ -72,10 +73,11 @@ const Dashboard = () => {
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
             <Leaf className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold text-primary">MDSign</span>
+            <span className="text-2xl font-bold text-primary">SignDoc</span>
           </div>
           
           <div className="flex items-center gap-4">
+            <DocumentNotifications />
             <span className="text-sm text-muted-foreground">
               {user?.email}
             </span>
@@ -91,12 +93,12 @@ const Dashboard = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
           <p className="text-muted-foreground">
-            Bem-vindo ao MDSign, {user?.user_metadata?.full_name || "Usuário"}!
+            Bem-vindo ao SignDoc, {user?.user_metadata?.full_name || "Usuário"}!
           </p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/documents')}>
             <CardHeader>
               <FileText className="h-12 w-12 text-primary mb-2" />
               <CardTitle>Documentos</CardTitle>
@@ -105,8 +107,8 @@ const Dashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button className="w-full" disabled>
-                Em breve
+              <Button className="w-full" asChild>
+                <Link to="/documents">Acessar</Link>
               </Button>
             </CardContent>
           </Card>
@@ -167,7 +169,12 @@ const Dashboard = () => {
                   Envie seu primeiro documento para assinatura
                 </p>
               </div>
-              <Button disabled>Enviar</Button>
+              <Button asChild>
+                <Link to="/documents/upload">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Enviar
+                </Link>
+              </Button>
             </div>
             
             <div className="flex items-center gap-4 p-4 border rounded-lg">
