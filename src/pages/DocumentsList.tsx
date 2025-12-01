@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useLacunaSigner } from '@/hooks/useLacunaSigner';
+import { useMDSignAPI } from '@/hooks/useMDSignAPI';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,17 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { DocumentNotifications } from '@/components/DocumentNotifications';
 import { Logo } from "@/components/Logo";
@@ -39,8 +28,6 @@ import {
   Search, 
   Filter, 
   Eye,
-  Trash2, 
-  UserPlus, 
   Download,
   ArrowLeft,
   Upload
@@ -49,7 +36,7 @@ import { toast } from '@/hooks/use-toast';
 
 export default function DocumentsList() {
   const navigate = useNavigate();
-  const { listDocuments, deleteDocument, loading } = useLacunaSigner();
+  const { listDocuments, downloadDocument, loading } = useMDSignAPI();
   const [documents, setDocuments] = useState<any[]>([]);
   const [filteredDocuments, setFilteredDocuments] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -80,7 +67,7 @@ export default function DocumentsList() {
   };
 
   const loadDocuments = async () => {
-    const docs = await listDocuments(100, 0);
+    const docs = await listDocuments();
     setDocuments(docs);
   };
 
@@ -103,11 +90,8 @@ export default function DocumentsList() {
     setFilteredDocuments(filtered);
   };
 
-  const handleDelete = async (documentId: string) => {
-    const success = await deleteDocument(documentId);
-    if (success) {
-      loadDocuments();
-    }
+  const handleDownload = async (documentId: string) => {
+    await downloadDocument(documentId);
   };
 
   const getStatusBadge = (status: string) => {
@@ -248,39 +232,11 @@ export default function DocumentsList() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => {
-                                toast({
-                                  title: "Funcionalidade em desenvolvimento",
-                                  description: "A adição de signatários estará disponível em breve",
-                                });
-                              }}
+                              onClick={() => handleDownload(doc.id)}
+                              title="Baixar documento"
                             >
-                              <UserPlus className="w-4 h-4" />
+                              <Download className="w-4 h-4" />
                             </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <Trash2 className="w-4 h-4 text-destructive" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Excluir documento?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Esta ação não pode ser desfeita. O documento será permanentemente excluído.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => handleDelete(doc.id)}
-                                    className="bg-destructive hover:bg-destructive/90"
-                                  >
-                                    Excluir
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
                           </div>
                         </TableCell>
                       </TableRow>
