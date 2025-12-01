@@ -57,6 +57,13 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        mdsign: {
+          orange: "hsl(var(--mdsign-orange))",
+          teal: "hsl(var(--mdsign-teal))",
+          "purple-dark": "hsl(var(--mdsign-purple-dark))",
+          "gradient-start": "hsl(var(--mdsign-gradient-start))",
+          "gradient-end": "hsl(var(--mdsign-gradient-end))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

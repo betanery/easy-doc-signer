@@ -17,42 +17,43 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* MDSign Brand Colors */
+    --primary: 258 90% 66%;  /* Purple #8B5CF6 */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 270 100% 96%;  /* Light Lavender #F3E8FF */
+    --secondary-foreground: 258 90% 66%;
 
-    --muted: 210 40% 96.1%;
+    --muted: 270 100% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 291 76% 62%;  /* Magenta #D946EF */
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 270 50% 90%;
+    --input: 270 50% 90%;
+    --ring: 258 90% 66%;
 
     --radius: 0.5rem;
 
+    /* Custom MDSign Colors */
+    --mdsign-orange: 24 95% 53%;  /* Orange CTA #F97316 */
+    --mdsign-teal: 160 84% 39%;   /* Teal/Green #10B981 */
+    --mdsign-purple-dark: 283 68% 32%;  /* Dark Purple Footer #581C87 */
+    --mdsign-gradient-start: 258 90% 66%;  /* Purple */
+    --mdsign-gradient-end: 291 76% 62%;    /* Magenta */
+
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-primary: 258 90% 66%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 270 100% 96%;
+    --sidebar-accent-foreground: 258 90% 66%;
+    --sidebar-border: 270 50% 90%;
+    --sidebar-ring: 258 90% 66%;
   }
 
   .dark {
