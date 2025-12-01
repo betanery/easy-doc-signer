@@ -22,6 +22,7 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          glow: "hsl(var(--primary-glow))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -64,11 +65,22 @@ export default {
           "gradient-start": "hsl(var(--mdsign-gradient-start))",
           "gradient-end": "hsl(var(--mdsign-gradient-end))",
         },
+        chart: {
+          "1": "hsl(var(--chart-1))",
+          "2": "hsl(var(--chart-2))",
+          "3": "hsl(var(--chart-3))",
+          "4": "hsl(var(--chart-4))",
+          "5": "hsl(var(--chart-5))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      boxShadow: {
+        premium: "0 20px 60px -15px hsl(277 84% 55% / 0.3)",
+        elegant: "0 10px 40px -10px hsl(240 10% 3.9% / 0.1)",
       },
       keyframes: {
         "accordion-down": {

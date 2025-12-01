@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DocumentNotifications } from "@/components/DocumentNotifications";
 import { useToast } from "@/hooks/use-toast";
-import { Leaf, FileText, Users, Settings, LogOut, Upload } from "lucide-react";
+import { FileText, Users, Settings, LogOut, Upload } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { DashboardStats } from "@/components/DashboardStats";
 import { DocumentsChart } from "@/components/DocumentsChart";
+import { Logo } from "@/components/Logo";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -69,21 +70,18 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Leaf className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold text-primary">SignDoc</span>
-          </div>
+      <header className="border-b bg-card/80 backdrop-blur-lg sticky top-0 z-50 shadow-elegant">
+        <div className="container flex h-20 items-center justify-between">
+          <Logo size="md" />
           
           <div className="flex items-center gap-4">
             <DocumentNotifications />
-            <span className="text-sm text-muted-foreground">
+            <span className="text-sm text-muted-foreground hidden md:inline">
               {user?.email}
             </span>
-            <Button variant="ghost" size="icon" onClick={handleSignOut}>
+            <Button variant="ghost" size="icon" onClick={handleSignOut} className="hover:bg-primary/10">
               <LogOut className="h-5 w-5" />
             </Button>
           </div>
@@ -110,68 +108,78 @@ const Dashboard = () => {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/documents')}>
-            <CardHeader>
-              <FileText className="h-12 w-12 text-primary mb-2" />
-              <CardTitle>Documentos</CardTitle>
+          <Card className="group hover:shadow-premium transition-all duration-300 cursor-pointer border-primary/20 hover:border-primary/40 overflow-hidden relative" onClick={() => navigate('/documents')}>
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <CardHeader className="relative">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <FileText className="h-8 w-8 text-white" />
+              </div>
+              <CardTitle className="text-xl">Documentos</CardTitle>
               <CardDescription>
                 Gerencie e assine seus documentos
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button className="w-full" asChild>
+            <CardContent className="relative">
+              <Button className="w-full bg-gradient-to-r from-primary to-primary-glow hover:opacity-90 transition-opacity" asChild>
                 <Link to="/documents">Acessar</Link>
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader>
-              <Users className="h-12 w-12 text-primary mb-2" />
-              <CardTitle>Usuários</CardTitle>
+          <Card className="group hover:shadow-premium transition-all duration-300 cursor-pointer border-secondary/20 hover:border-secondary/40 overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <CardHeader className="relative">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-secondary to-orange-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Users className="h-8 w-8 text-white" />
+              </div>
+              <CardTitle className="text-xl">Usuários</CardTitle>
               <CardDescription>
                 Gerencie sua equipe
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button className="w-full" disabled>
+            <CardContent className="relative">
+              <Button className="w-full" variant="outline" disabled>
                 Em breve
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/tenants')}>
-            <CardHeader>
-              <Settings className="h-12 w-12 text-primary mb-2" />
-              <CardTitle>Gerenciar Tenants</CardTitle>
+          <Card className="group hover:shadow-premium transition-all duration-300 cursor-pointer border-primary/20 hover:border-primary/40 overflow-hidden relative" onClick={() => navigate('/tenants')}>
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <CardHeader className="relative">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Settings className="h-8 w-8 text-white" />
+              </div>
+              <CardTitle className="text-xl">Gerenciar Tenants</CardTitle>
               <CardDescription>
                 Configure organizações e usuários
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button className="w-full" asChild>
+            <CardContent className="relative">
+              <Button className="w-full bg-gradient-to-r from-primary to-primary-glow hover:opacity-90 transition-opacity" asChild>
                 <Link to="/tenants">Acessar</Link>
               </Button>
             </CardContent>
           </Card>
         </div>
 
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle>Próximos Passos</CardTitle>
+        <Card className="mt-8 border-primary/20 shadow-elegant overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 pointer-events-none" />
+          <CardHeader className="relative">
+            <CardTitle className="text-xl">Próximos Passos</CardTitle>
             <CardDescription>
               Complete a configuração da sua conta
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-4 p-4 border rounded-lg">
+          <CardContent className="space-y-4 relative">
+            <div className="flex items-center gap-4 p-5 border rounded-xl hover:border-primary/40 transition-all group hover:shadow-md bg-card/50">
               <div className="flex-1">
-                <h3 className="font-semibold">Configurar Tenant</h3>
+                <h3 className="font-semibold group-hover:text-primary transition-colors">Configurar Tenant</h3>
                 <p className="text-sm text-muted-foreground">
                   Crie ou associe-se a uma organização
                 </p>
               </div>
-              <Button asChild>
+              <Button asChild className="bg-gradient-to-r from-primary to-primary-glow">
                 <Link to="/tenants">
                   <Settings className="w-4 h-4 mr-2" />
                   Configurar
@@ -179,14 +187,14 @@ const Dashboard = () => {
               </Button>
             </div>
             
-            <div className="flex items-center gap-4 p-4 border rounded-lg">
+            <div className="flex items-center gap-4 p-5 border rounded-xl hover:border-primary/40 transition-all group hover:shadow-md bg-card/50">
               <div className="flex-1">
-                <h3 className="font-semibold">Upload de Documentos</h3>
+                <h3 className="font-semibold group-hover:text-primary transition-colors">Upload de Documentos</h3>
                 <p className="text-sm text-muted-foreground">
                   Envie seu primeiro documento para assinatura
                 </p>
               </div>
-              <Button asChild>
+              <Button asChild className="bg-gradient-to-r from-primary to-primary-glow">
                 <Link to="/documents/upload">
                   <Upload className="w-4 h-4 mr-2" />
                   Enviar
@@ -194,14 +202,14 @@ const Dashboard = () => {
               </Button>
             </div>
             
-            <div className="flex items-center gap-4 p-4 border rounded-lg">
+            <div className="flex items-center gap-4 p-5 border rounded-xl opacity-60 bg-card/30">
               <div className="flex-1">
                 <h3 className="font-semibold">Integração Lacuna Signer</h3>
                 <p className="text-sm text-muted-foreground">
                   Configure suas credenciais da API
                 </p>
               </div>
-              <Button disabled>Integrar</Button>
+              <Button disabled variant="outline">Integrar</Button>
             </div>
           </CardContent>
         </Card>

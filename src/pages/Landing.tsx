@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import { Logo } from "@/components/Logo";
 import { 
   FileText, 
   Clock, 
@@ -171,28 +172,28 @@ const Landing = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Leaf className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold text-primary">SignDoc</span>
-          </div>
+      <header className="sticky top-0 z-50 w-full border-b bg-card/80 backdrop-blur-lg shadow-elegant">
+        <div className="container flex h-20 items-center justify-between">
+          <Logo size="md" showText={false} />
           
           <nav className="hidden md:flex items-center gap-6">
-            <a href="#como-funciona" className="text-sm font-medium hover:text-primary transition-colors">
-              Como funciona
+            <a href="#beneficios" className="text-sm font-medium hover:text-primary transition-colors">
+              Benefícios
             </a>
             <a href="#planos" className="text-sm font-medium hover:text-primary transition-colors">
               Planos
+            </a>
+            <a href="#faq" className="text-sm font-medium hover:text-primary transition-colors">
+              FAQ
             </a>
           </nav>
 
           <div className="flex items-center gap-4">
             <Link to="/auth">
-              <Button variant="ghost">Login</Button>
+              <Button variant="outline" className="border-primary hover:bg-primary hover:text-white">Entrar</Button>
             </Link>
             <Link to="/auth">
-              <Button className="bg-mdsign-teal hover:bg-mdsign-teal/90">
+              <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
                 Começar Grátis
               </Button>
             </Link>
@@ -232,20 +233,26 @@ const Landing = () => {
       </section>
 
       {/* Benefits Section */}
-      <section className="py-20 bg-secondary">
+      <section id="beneficios" className="py-20 bg-gradient-to-b from-background to-muted/30">
         <div className="container">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
-            Por que escolher o SignDoc?
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+            Por que escolher o MDSign?
           </h2>
+          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+            Tecnologia de ponta para transformar a forma como você assina documentos
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {benefits.map((benefit, index) => (
               <Card 
                 key={index} 
-                className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-primary/20"
+                className="group hover:shadow-premium transition-all duration-300 hover:-translate-y-2 border-primary/20 hover:border-primary/40 overflow-hidden relative"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <CardHeader>
-                  <benefit.icon className="h-12 w-12 text-primary mb-2" />
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <CardHeader className="relative">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <benefit.icon className="h-7 w-7 text-white" />
+                  </div>
                   <CardTitle className="text-lg">{benefit.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
