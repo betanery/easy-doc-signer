@@ -128,17 +128,17 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/tenants')}>
             <CardHeader>
               <Settings className="h-12 w-12 text-primary mb-2" />
-              <CardTitle>Configurações</CardTitle>
+              <CardTitle>Gerenciar Tenants</CardTitle>
               <CardDescription>
-                Personalize sua conta
+                Configure organizações e usuários
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button className="w-full" disabled>
-                Em breve
+              <Button className="w-full" asChild>
+                <Link to="/tenants">Acessar</Link>
               </Button>
             </CardContent>
           </Card>
@@ -159,7 +159,12 @@ const Dashboard = () => {
                   Crie ou associe-se a uma organização
                 </p>
               </div>
-              <Button disabled>Configurar</Button>
+              <Button asChild>
+                <Link to="/tenants">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Configurar
+                </Link>
+              </Button>
             </div>
             
             <div className="flex items-center gap-4 p-4 border rounded-lg">
