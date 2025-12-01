@@ -15,7 +15,8 @@ import {
   Phone,
   Mail,
   MapPin,
-  Linkedin
+  Linkedin,
+  MessageCircle
 } from "lucide-react";
 
 const Landing = () => {
@@ -32,94 +33,139 @@ const Landing = () => {
 
   const plans = [
     {
-      name: "Ipê",
-      price: "R$ 99,00",
-      documents: "50 documentos/mês",
-      features: ["Assinatura digital", "Suporte por email", "1 usuário"],
+      name: "Cedro – Gratuito",
+      subtitle: "Perfil ideal: Pessoa física, uso esporádico",
+      price: "R$ 0",
+      period: "",
+      features: [
+        "Documentos/mês: 5",
+        "Usuários: 1",
+        "Acesso básico à plataforma",
+        "Assinatura eletrônica simples",
+        "Experiência inicial sem custo"
+      ],
       popular: false,
     },
     {
-      name: "Jatobá",
-      price: "R$ 199,00",
-      documents: "150 documentos/mês",
-      features: ["Assinatura digital", "Suporte prioritário", "3 usuários", "API Access"],
+      name: "Jacarandá – Essencial",
+      subtitle: "Perfil ideal: Microempreendedor ou autônomo",
+      price: "R$ 39,90",
+      period: "ou R$ 427,00/ano (+ de 10% de desconto)",
+      features: [
+        "Documentos/mês: 20",
+        "Usuários: 1",
+        "Assinatura eletrônica e com certificado digital",
+        "Armazenamento em nuvem",
+        "Atendimento à LGPD"
+      ],
       popular: false,
     },
     {
-      name: "Angico",
-      price: "R$ 349,00",
-      documents: "500 documentos/mês",
-      features: ["Tudo do Jatobá", "5 usuários", "Integração avançada", "Relatórios"],
+      name: "Angico – Profissional",
+      subtitle: "Perfil ideal: Profissional liberal ou pequena equipe",
+      price: "R$ 99,97",
+      period: "ou R$ 1.097,00/ano (+ de 10% de desconto)",
+      features: [
+        "Documentos/mês: Ilimitado",
+        "Usuários: Até 4 usuários",
+        "Assinaturas ilimitadas",
+        "Suporte prioritário",
+        "Validação por e-mail e SMS",
+        "Permissões básicas para equipe"
+      ],
       popular: true,
     },
     {
-      name: "Aroeira",
-      price: "R$ 599,00",
-      documents: "1.000 documentos/mês",
-      features: ["Tudo do Angico", "10 usuários", "Suporte 24/7", "White label"],
+      name: "Aroeira – PME Básica",
+      subtitle: "Perfil ideal: Pequena empresa em expansão",
+      price: "R$ 149,97",
+      period: "ou R$ 1.499,97/ano (ganhe 2 mensalidades)",
+      features: [
+        "Documentos/mês: Ilimitado",
+        "Usuários: Até 6 usuários",
+        "Criação de fluxos personalizados",
+        "Acesso a múltiplos signatários",
+        "Pastas organizacionais por projeto ou equipe"
+      ],
       popular: false,
     },
     {
-      name: "Peroba",
-      price: "R$ 999,00",
-      documents: "2.500 documentos/mês",
-      features: ["Tudo do Aroeira", "20 usuários", "Gerente dedicado", "SLA garantido"],
+      name: "Ipê – PME Completa",
+      subtitle: "Perfil ideal: PME com múltiplas áreas e equipes",
+      price: "R$ 199,97",
+      period: "ou R$ 1.999,97/ano (ganhe 2 mensalidades)",
+      features: [
+        "Documentos/mês: Ilimitado",
+        "Usuários: Até 10 usuários",
+        "Acesso multiusuário completo",
+        "Integração com sistemas via API",
+        "Geração de documentos em massa (CSV)",
+        "Webhook para sistemas externos"
+      ],
       popular: false,
     },
     {
-      name: "Pau-Brasil",
-      price: "Sob consulta",
-      documents: "Ilimitado",
-      features: ["Tudo do Peroba", "Usuários ilimitados", "Customização total", "Infraestrutura dedicada"],
+      name: "Mogno – Corporativo",
+      subtitle: "Perfil ideal: Empresas de médio a grande porte",
+      price: "A conferir",
+      period: "Preços especiais para quem precisa de mais robustez e atendimento diferenciado",
+      features: [
+        "Documentos/mês: Ilimitado",
+        "Usuários: Ilimitado",
+        "Gestão de permissões avançada",
+        "Múltiplas organizações",
+        "Suporte premium e customizações",
+        "Ideal para franqueadoras, grupos empresariais e organizações com alta demanda"
+      ],
       popular: false,
-    },
+    }
   ];
 
   const faqs = [
     {
-      question: "Como funciona a assinatura digital?",
-      answer: "A assinatura digital utiliza certificação ICP-Brasil para garantir a autenticidade e validade jurídica do documento.",
+      question: "Posso testar o SignDoc grátis antes de contratar?",
+      answer: "Sim! Com o Plano Grátis do SignDoc você pode experimentar a plataforma sem pagar nada. Você pode enviar até 5 documentos por mês para assinatura, com assinatura gratuita para você e para quem for assinar. Cada envio pode incluir vários documentos e múltiplos signatários."
     },
     {
-      question: "É juridicamente válido?",
-      answer: "Sim! As assinaturas digitais têm a mesma validade jurídica que assinaturas manuscritas, conforme MP 2.200-2/2001.",
+      question: "Posso assinar qualquer tipo de documento?",
+      answer: "Sim! Você pode assinar contratos, propostas, termos, autorizações, declarações e qualquer outro tipo de documento eletrônico em PDF."
     },
     {
-      question: "Quanto tempo leva para assinar?",
-      answer: "Em média, menos de 1 minuto! Basta fazer upload, posicionar a assinatura e confirmar.",
+      question: "Como envio um documento para assinatura?",
+      answer: "Basta acessar sua conta, clicar em 'Novo envio', fazer o upload do documento e definir quem precisa assinar. Você também pode definir a ordem das assinaturas, adicionar anexos e configurar prazos."
     },
     {
-      question: "Posso cancelar a qualquer momento?",
-      answer: "Sim, não há fidelidade. Você pode cancelar seu plano quando quiser.",
+      question: "Como assino um documento?",
+      answer: "Ao receber o link por e-mail, SMS ou WhatsApp, basta clicar, revisar o documento e assinar eletronicamente. Se você tiver um certificado digital, também pode utilizá-lo."
     },
     {
-      question: "Como funciona o suporte?",
-      answer: "Oferecemos suporte por email, chat e telefone conforme o plano contratado.",
+      question: "Todos que assinam precisam ter uma conta no SignDoc?",
+      answer: "Não! Apenas quem cria o envio precisa ter uma conta. Quem for assinar recebe um link e pode assinar de forma segura e gratuita, sem precisar se cadastrar."
     },
     {
-      question: "Preciso de certificado digital?",
-      answer: "Não necessariamente. Oferecemos opções com assinatura eletrônica simples e qualificada.",
+      question: "O que é um envio?",
+      answer: "Um envio é o processo de encaminhar um ou mais documentos para uma ou mais pessoas assinarem. Cada envio pode conter vários arquivos e múltiplos signatários, com rastreamento completo."
     },
     {
-      question: "Os documentos ficam salvos?",
-      answer: "Sim, todos os documentos assinados ficam armazenados de forma segura em nossa nuvem.",
+      question: "Como funciona a cobrança dos planos?",
+      answer: "Os planos são mensais ou anuais, com pagamento recorrente no cartão de crédito. Planos anuais oferecem descontos e bônus, como 2 meses grátis nos planos Aroeira, Ipê e Mogno."
     },
     {
-      question: "Posso integrar com meu sistema?",
-      answer: "Sim! Oferecemos API REST completa para integração com seus sistemas.",
+      question: "O que são usuários e como funciona o limite de usuários?",
+      answer: "Usuários são pessoas da sua equipe com acesso ao painel do SignDoc. Cada plano possui um número específico de usuários. Exemplo: Angico: até 4 usuários, Aroeira: até 6 usuários, Ipê: até 10 usuários, Mogno: usuários ilimitados."
     },
     {
-      question: "Há desconto para pagamento anual?",
-      answer: "Sim! No pagamento anual você ganha 2 meses grátis.",
+      question: "Posso compartilhar minha conta com outra pessoa?",
+      answer: "Não é recomendado. Cada usuário tem seu próprio acesso para garantir segurança, rastreabilidade e permissões específicas. Nos planos pagos, você pode adicionar usuários conforme sua equipe."
     },
     {
-      question: "Como funciona o multi-tenant?",
-      answer: "Cada empresa tem seu ambiente isolado e seguro, com gestão própria de usuários e documentos.",
+      question: "Preciso de um certificado digital para usar o SignDoc?",
+      answer: "Não! O SignDoc funciona com assinatura eletrônica simples, válida legalmente. Se você quiser, pode usar certificado digital A1, A3 ou em nuvem, sem custo adicional no plano."
     },
     {
-      question: "Posso testar antes de assinar?",
-      answer: "Sim! Oferecemos 7 dias de teste grátis em todos os planos.",
-    },
+      question: "Como pago meus envios (documentos)?",
+      answer: "Se você estiver no plano gratuito, não paga nada. Nos planos pagos, você tem documentos ilimitados (exceto no Jacarandá). O pagamento é feito via cartão de crédito mensal ou anual."
+    }
   ];
 
   return (
@@ -129,7 +175,7 @@ const Landing = () => {
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
             <Leaf className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold text-primary">MDSign</span>
+            <span className="text-2xl font-bold text-primary">SignDoc</span>
           </div>
           
           <nav className="hidden md:flex items-center gap-6">
@@ -163,7 +209,7 @@ const Landing = () => {
                 Assine documentos em segundos. Economize tempo, reduza custos e salve o planeta!
               </h1>
               <p className="text-xl text-white/90">
-                A solução completa de assinatura digital que sua empresa precisa.
+                Com o SignDoc, você automatiza assinaturas, elimina papelada e ainda contribui com o meio ambiente.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link to="/auth">
@@ -189,7 +235,7 @@ const Landing = () => {
       <section className="py-20 bg-secondary">
         <div className="container">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
-            Por que escolher o MDSign?
+            Por que escolher o SignDoc?
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {benefits.map((benefit, index) => (
@@ -237,19 +283,22 @@ const Landing = () => {
                   </Badge>
                 )}
                 <CardHeader>
-                  <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                  <CardDescription className="text-sm">{plan.documents}</CardDescription>
-                  <div className="mt-4">
-                    <span className="text-4xl font-bold text-primary">{plan.price}</span>
-                    {plan.price !== "Sob consulta" && <span className="text-muted-foreground">/mês</span>}
+                  <CardTitle className="text-xl">{plan.name}</CardTitle>
+                  <CardDescription className="text-sm mb-2">{plan.subtitle}</CardDescription>
+                  <div className="mt-2">
+                    <span className="text-3xl font-bold text-primary">{plan.price}</span>
+                    {plan.price !== "A conferir" && plan.price !== "R$ 0" && <span className="text-sm text-muted-foreground">/mês</span>}
                   </div>
+                  {plan.period && (
+                    <p className="text-xs text-muted-foreground mt-1">{plan.period}</p>
+                  )}
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
                     {plan.features.map((feature, idx) => (
-                      <li key={idx} className="flex items-center gap-2">
-                        <CheckCircle className="h-5 w-5 text-mdsign-teal" />
-                        <span>{feature}</span>
+                      <li key={idx} className="flex items-start gap-2">
+                        <CheckCircle className="h-4 w-4 text-mdsign-teal flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -257,7 +306,7 @@ const Landing = () => {
                 <CardFooter>
                   <Link to="/auth" className="w-full">
                     <Button className="w-full bg-mdsign-orange hover:bg-mdsign-orange/90">
-                      Começar Agora
+                      Assine agora
                     </Button>
                   </Link>
                 </CardFooter>
@@ -291,55 +340,102 @@ const Landing = () => {
       {/* Footer */}
       <footer className="bg-mdsign-purple-dark text-white py-12">
         <div className="container">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <Leaf className="h-8 w-8" />
-                <span className="text-2xl font-bold">MDSign</span>
+                <span className="text-2xl font-bold">SignDoc</span>
               </div>
-              <p className="text-white/80">
-                Assinatura digital sustentável e segura para sua empresa.
+              <p className="text-white/80 mb-6">
+                Transformando a gestão de documentos com sustentabilidade e tecnologia.
               </p>
+              <Link to="/auth">
+                <Button className="w-full bg-mdsign-orange hover:bg-mdsign-orange/90">
+                  Comece grátis agora
+                </Button>
+              </Link>
             </div>
             
             <div>
-              <h3 className="font-bold text-lg mb-4">Contato</h3>
-              <div className="space-y-2 text-white/80">
+              <h3 className="font-bold text-lg mb-4">Atendimento</h3>
+              <div className="space-y-3 text-white/80">
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4" />
-                  <span>(61) 3003-0632</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4" />
-                  <span>(61) 99933-8061 (WhatsApp)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  <span>contato@signdocmd.com.br</span>
+                  <span>(61) 3345-9494</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4" />
-                  <span>Seg-Sex: 08:00 às 20:00</span>
+                  <span>08:00 às 20:00</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  <span>contato@signdoc.com.br</span>
                 </div>
               </div>
+            </div>
+            
+            <div>
+              <h3 className="font-bold text-lg mb-4">Institucional</h3>
+              <ul className="space-y-2 text-white/80">
+                <li>
+                  <a 
+                    href="https://mundodigitaltech.com.br/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="hover:text-white transition-colors"
+                  >
+                    Mundo Digital Tech
+                  </a>
+                </li>
+                <li>
+                  <a 
+                    href="https://mundodigitaltech.com.br/quem-somos/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="hover:text-white transition-colors"
+                  >
+                    Sobre nós
+                  </a>
+                </li>
+                <li>
+                  <a 
+                    href="https://mundodigitaltech.com.br/post/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="hover:text-white transition-colors"
+                  >
+                    Blog
+                  </a>
+                </li>
+                <li>Mais produtos DOC</li>
+              </ul>
             </div>
             
             <div>
               <h3 className="font-bold text-lg mb-4">Redes Sociais</h3>
-              <a 
-                href="https://linkedin.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
-              >
-                <Linkedin className="h-5 w-5" />
-                <span>LinkedIn</span>
-              </a>
+              <div className="flex gap-4">
+                <a 
+                  href="https://wa.me/5561999338061" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-white/80 hover:text-white transition-colors"
+                >
+                  <MessageCircle className="h-6 w-6" />
+                </a>
+                <a 
+                  href="https://linkedin.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-white/80 hover:text-white transition-colors"
+                >
+                  <Linkedin className="h-6 w-6" />
+                </a>
+              </div>
             </div>
           </div>
           
           <div className="border-t border-white/20 mt-8 pt-8 text-center text-white/60">
-            <p>&copy; {new Date().getFullYear()} MDSign. Todos os direitos reservados.</p>
+            <p>&copy; {new Date().getFullYear()} SignDoc. Todos os direitos reservados.</p>
           </div>
         </div>
       </footer>
