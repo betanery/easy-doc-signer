@@ -188,12 +188,12 @@ export default function DocumentCreatePage() {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label>Pasta</Label>
-                    <Select value={folderId} onValueChange={setFolderId}>
+                    <Select value={folderId || "none"} onValueChange={(v) => setFolderId(v === "none" ? "" : v)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Sem pasta" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Sem pasta</SelectItem>
+                        <SelectItem value="none">Sem pasta</SelectItem>
                         {folders.map((f: any) => (
                           <SelectItem key={f.id} value={String(f.id)}>
                             {f.name}
