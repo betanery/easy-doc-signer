@@ -45,6 +45,7 @@ const Auth = () => {
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: (res: any) => {
       console.log("[Auth] Login success:", res);
+      console.log("[Auth] Setting token:", res.token ? `${res.token.substring(0, 30)}...` : "NO TOKEN IN RESPONSE");
       setAuthToken(res.token);
       toast.success("Login realizado com sucesso!");
       navigate("/dashboard");

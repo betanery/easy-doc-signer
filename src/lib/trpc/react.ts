@@ -17,6 +17,7 @@ export const trpcClient = (trpc as any).createClient({
       headers() {
         if (typeof window === "undefined") return {};
         const token = localStorage.getItem("auth_token");
+        console.log("[tRPC] Token being sent:", token ? `${token.substring(0, 20)}...` : "NO TOKEN");
         return token ? { Authorization: `Bearer ${token}` } : {};
       },
     }),
