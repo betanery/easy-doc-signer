@@ -11,6 +11,8 @@ import DocumentUpload from "./pages/DocumentUpload";
 import DocumentDetail from "./pages/DocumentDetail";
 import TenantManagement from "./pages/TenantManagement";
 import Plans from "./pages/Plans";
+import CheckoutSuccess from "./pages/CheckoutSuccess";
+import CheckoutCancel from "./pages/CheckoutCancel";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +32,8 @@ const App = () => (
           <Route path="/documents/:id" element={<DocumentDetail />} />
           <Route path="/tenants" element={<TenantManagement />} />
           <Route path="/planos" element={<Plans />} />
+          <Route path="/checkout/success" element={<CheckoutSuccess />} />
+          <Route path="/checkout/cancel" element={<CheckoutCancel />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
