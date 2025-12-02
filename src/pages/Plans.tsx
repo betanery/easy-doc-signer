@@ -155,7 +155,7 @@ export default function Plans() {
                   <ul className="space-y-2">
                     {plan.features.map((feature, index) => (
                       <li key={index} className="flex items-center gap-2 text-sm">
-                        <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                        <Check className="w-4 h-4 text-status-success flex-shrink-0" />
                         <span>{feature}</span>
                       </li>
                     ))}

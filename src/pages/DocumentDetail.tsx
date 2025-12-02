@@ -87,11 +87,11 @@ const DocumentDetail = () => {
   const getSignerStatusIcon = (status: string) => {
     switch (status) {
       case "signed":
-        return <CheckCircle2 className="h-5 w-5 text-green-600" />;
+        return <CheckCircle2 className="h-5 w-5 text-status-success" />;
       case "pending":
-        return <Clock className="h-5 w-5 text-yellow-600" />;
+        return <Clock className="h-5 w-5 text-status-warning" />;
       case "refused":
-        return <XCircle className="h-5 w-5 text-red-600" />;
+        return <XCircle className="h-5 w-5 text-status-error" />;
       default:
         return <Clock className="h-5 w-5 text-muted-foreground" />;
     }

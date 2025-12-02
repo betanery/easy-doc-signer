@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useMDSignAPI } from '@/hooks/useMDSignAPI';
@@ -32,46 +32,31 @@ import {
   ArrowLeft,
   Upload
 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import type { User } from '@supabase/supabase-js';
+
+interface DocumentItem {
+  id: string;
+  name?: string;
+  status: string;
+  createdAt?: string;
+  participants?: Array<{ name: string; email: string }>;
+}
 
 export default function DocumentsList() {
   const navigate = useNavigate();
   const { listDocuments, downloadDocument, loading } = useMDSignAPI();
-  const [documents, setDocuments] = useState<any[]>([]);
-  const [filteredDocuments, setFilteredDocuments] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [filteredDocuments, setFilteredDocuments] = useState<DocumentItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  useEffect(() => {
-    if (user) {
-      loadDocuments();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    filterDocuments();
-  }, [documents, searchQuery, statusFilter]);
-
-  const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      navigate('/auth');
-      return;
-    }
-    setUser(session.user);
-  };
-
-  const loadDocuments = async () => {
+  const loadDocuments = useCallback(async () => {
     const docs = await listDocuments();
-    setDocuments(docs);
-  };
+    setDocuments(docs as DocumentItem[]);
+  }, [listDocuments]);
 
-  const filterDocuments = () => {
+  const filterDocuments = useCallback(() => {
     let filtered = [...documents];
 
     // Filtro de busca
@@ -88,7 +73,29 @@ export default function DocumentsList() {
     }
 
     setFilteredDocuments(filtered);
-  };
+  }, [documents, searchQuery, statusFilter]);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/auth');
+        return;
+      }
+      setUser(session.user);
+    };
+    checkAuth();
+  }, [navigate]);
+
+  useEffect(() => {
+    if (user) {
+      loadDocuments();
+    }
+  }, [user, loadDocuments]);
+
+  useEffect(() => {
+    filterDocuments();
+  }, [filterDocuments]);
 
   const handleDownload = async (documentId: string) => {
     await downloadDocument(documentId);
@@ -96,13 +103,13 @@ export default function DocumentsList() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; className: string }> = {
-      'Pending': { label: 'Pendente', className: 'bg-yellow-500' },
-      'InProgress': { label: 'Em Andamento', className: 'bg-blue-500' },
-      'Completed': { label: 'Concluído', className: 'bg-green-500' },
-      'Cancelled': { label: 'Cancelado', className: 'bg-red-500' },
+      'Pending': { label: 'Pendente', className: 'bg-status-warning text-white' },
+      'InProgress': { label: 'Em Andamento', className: 'bg-status-info text-white' },
+      'Completed': { label: 'Concluído', className: 'bg-status-success text-white' },
+      'Cancelled': { label: 'Cancelado', className: 'bg-status-error text-white' },
     };
 
-    const config = statusConfig[status] || { label: status, className: 'bg-gray-500' };
+    const config = statusConfig[status] || { label: status, className: 'bg-muted text-muted-foreground' };
     return <Badge className={config.className}>{config.label}</Badge>;
   };
 

@@ -56,7 +56,7 @@ export default function DocumentUpload() {
       }
     };
     checkLimits();
-  }, []);
+  }, [getStats]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];

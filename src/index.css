@@ -51,6 +51,14 @@ All colors MUST be HSL.
     --mdsign-orange: 24 95% 53%;
     --mdsign-teal: 160 84% 39%;
     --mdsign-purple-dark: 283 68% 32%;
+    --mdsign-gradient-start: 277 84% 55%;
+    --mdsign-gradient-end: 277 94% 65%;
+    
+    /* Status Colors */
+    --status-success: 142 76% 36%;
+    --status-warning: 38 92% 50%;
+    --status-error: 0 84% 60%;
+    --status-info: 221 83% 53%;
     
     /* Premium Effects */
     --gradient-primary: linear-gradient(135deg, hsl(277 84% 55%), hsl(277 94% 65%));
@@ -104,6 +112,12 @@ All colors MUST be HSL.
     --chart-3: 277 74% 45%;
     --chart-4: 45 93% 47%;
     --chart-5: 45 83% 57%;
+
+    /* Status Colors (Dark Mode) */
+    --status-success: 142 76% 36%;
+    --status-warning: 38 92% 50%;
+    --status-error: 0 62% 50%;
+    --status-info: 221 83% 53%;
     
     /* Premium Effects */
     --gradient-primary: linear-gradient(135deg, hsl(277 84% 55%), hsl(277 94% 65%));
