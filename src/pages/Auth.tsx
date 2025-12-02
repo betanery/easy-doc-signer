@@ -41,9 +41,33 @@ const Auth = () => {
   const [planId, setPlanId] = useState<number>(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // tRPC mutations
-  const loginMutation = trpc.auth.login.useMutation();
-  const signupMutation = trpc.auth.signup.useMutation();
+  // tRPC mutations with callbacks defined in useMutation (following example pattern)
+  const loginMutation = trpc.auth.login.useMutation({
+    onSuccess: (res: any) => {
+      console.log("[Auth] Login success:", res);
+      setAuthToken(res.token);
+      toast.success("Login realizado com sucesso!");
+      navigate("/dashboard");
+    },
+    onError: (error: any) => {
+      console.log("[Auth] Login error:", error);
+      toast.error(error.message || "Erro ao fazer login");
+    },
+  });
+  
+  const signupMutation = trpc.auth.signup.useMutation({
+    onSuccess: (res: any) => {
+      console.log("[Auth] Signup success:", res);
+      setAuthToken(res.token);
+      toast.success("Conta criada com sucesso!");
+      navigate("/dashboard");
+    },
+    onError: (error: any) => {
+      console.log("[Auth] Signup error:", error);
+      toast.error(error.message || "Erro ao criar conta");
+    },
+  });
+  
   const plansQuery = trpc.plans.useQuery(undefined, {
     retry: false,
     refetchOnWindowFocus: false,
@@ -83,24 +107,8 @@ const Auth = () => {
       return;
     }
 
-    const loginInput = { email: email.trim(), password };
-    console.log("[Auth] Login input:", JSON.stringify(loginInput));
-
-    (loginMutation.mutate as any)(
-      loginInput,
-      {
-        onSuccess: (res: any) => {
-          console.log("[Auth] Login success:", res);
-          setAuthToken(res.token);
-          toast.success("Login realizado com sucesso!");
-          navigate("/dashboard");
-        },
-        onError: (error: any) => {
-          console.log("[Auth] Login error:", error);
-          toast.error(error.message || "Erro ao fazer login");
-        },
-      }
-    );
+    console.log("[Auth] Login input:", { email: email.trim(), password });
+    loginMutation.mutate({ email: email.trim(), password });
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -126,26 +134,23 @@ const Auth = () => {
       return;
     }
 
-    (signupMutation.mutate as any)(
-      {
-        email: signupEmail.trim(),
-        password: signupPassword,
-        name: signupName.trim(),
-        tenantName: tenantName.trim(),
-        cnpj: cnpj.trim() || undefined,
-        planId,
-      },
-      {
-        onSuccess: (res: any) => {
-          setAuthToken(res.token);
-          toast.success("Conta criada com sucesso!");
-          navigate("/dashboard");
-        },
-        onError: (error: any) => {
-          toast.error(error.message || "Erro ao criar conta");
-        },
-      }
-    );
+    console.log("[Auth] Signup input:", {
+      email: signupEmail.trim(),
+      password: signupPassword,
+      name: signupName.trim(),
+      tenantName: tenantName.trim(),
+      cnpj: cnpj.trim() || undefined,
+      planId,
+    });
+    
+    signupMutation.mutate({
+      email: signupEmail.trim(),
+      password: signupPassword,
+      name: signupName.trim(),
+      tenantName: tenantName.trim(),
+      cnpj: cnpj.trim() || undefined,
+      planId,
+    });
   };
 
   const loading = loginMutation.isPending || signupMutation.isPending;
