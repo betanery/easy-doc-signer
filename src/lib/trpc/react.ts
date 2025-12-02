@@ -1,61 +1,66 @@
-import { createTRPCReact, type CreateTRPCReact } from "@trpc/react-query";
+import { createTRPCReact } from "@trpc/react-query";
 import { httpBatchLink } from "@trpc/client";
 import superjson from "superjson";
 import { initTRPC } from "@trpc/server";
 
-// Create a dummy router type for the client (actual types come from backend)
-const t = initTRPC.create({ transformer: superjson });
+// Create a dummy tRPC instance for type inference
+const t = initTRPC.create({
+  transformer: superjson,
+});
 
-// Create placeholder router structure matching the backend
-const appRouter = t.router({
+// Define dummy procedures
+const procedure = t.procedure;
+
+// Create a router structure matching the MDSign backend
+const dummyRouter = t.router({
   auth: t.router({
-    login: t.procedure.mutation(() => ({})),
-    signup: t.procedure.mutation(() => ({})),
-    me: t.procedure.query(() => ({})),
+    login: procedure.mutation(() => ({ token: "", user: {} })),
+    signup: procedure.mutation(() => ({ token: "", user: {} })),
+    me: procedure.query(() => ({})),
   }),
-  plans: t.procedure.query(() => ({})),
+  plans: procedure.query(() => []),
   mdsign: t.router({
     documents: t.router({
-      upload: t.procedure.mutation(() => ({})),
-      create: t.procedure.mutation(() => ({})),
-      list: t.procedure.query(() => ({})),
-      getById: t.procedure.query(() => ({})),
-      generateActionUrl: t.procedure.mutation(() => ({})),
-      sendReminder: t.procedure.mutation(() => ({})),
-      download: t.procedure.query(() => ({})),
+      upload: procedure.mutation(() => ({ uploadId: "" })),
+      create: procedure.mutation(() => ({ document: {} })),
+      list: procedure.query(() => ({ documents: [] })),
+      getById: procedure.query(() => ({ document: {} })),
+      generateActionUrl: procedure.mutation(() => ({ url: "" })),
+      sendReminder: procedure.mutation(() => ({})),
+      download: procedure.query(() => ({ url: "" })),
     }),
     folders: t.router({
-      create: t.procedure.mutation(() => ({})),
-      list: t.procedure.query(() => ({})),
-      getById: t.procedure.query(() => ({})),
-      tree: t.procedure.query(() => ({})),
-      update: t.procedure.mutation(() => ({})),
-      delete: t.procedure.mutation(() => ({})),
+      create: procedure.mutation(() => ({ folder: {} })),
+      list: procedure.query(() => ({ folders: [] })),
+      getById: procedure.query(() => ({ folder: {} })),
+      tree: procedure.query(() => ({ tree: [] })),
+      update: procedure.mutation(() => ({ folder: {} })),
+      delete: procedure.mutation(() => ({})),
     }),
     organizations: t.router({
-      create: t.procedure.mutation(() => ({})),
-      list: t.procedure.query(() => ({})),
-      getById: t.procedure.query(() => ({})),
-      update: t.procedure.mutation(() => ({})),
-      delete: t.procedure.mutation(() => ({})),
-      addUser: t.procedure.mutation(() => ({})),
-      removeUser: t.procedure.mutation(() => ({})),
-      users: t.procedure.query(() => ({})),
+      create: procedure.mutation(() => ({ organization: {} })),
+      list: procedure.query(() => ({ organizations: [] })),
+      getById: procedure.query(() => ({ organization: {} })),
+      update: procedure.mutation(() => ({ organization: {} })),
+      delete: procedure.mutation(() => ({})),
+      addUser: procedure.mutation(() => ({})),
+      removeUser: procedure.mutation(() => ({})),
+      users: procedure.query(() => ({ users: [] })),
     }),
-    stats: t.procedure.query(() => ({})),
-    upgradePlan: t.procedure.mutation(() => ({})),
-    configureLacuna: t.procedure.mutation(() => ({})),
-    lacunaStatus: t.procedure.query(() => ({})),
-    removeLacunaCredentials: t.procedure.mutation(() => ({})),
+    stats: procedure.query(() => ({ documents: 0, pending: 0, completed: 0 })),
+    upgradePlan: procedure.mutation(() => ({})),
+    configureLacuna: procedure.mutation(() => ({})),
+    lacunaStatus: procedure.query(() => ({})),
+    removeLacunaCredentials: procedure.mutation(() => ({})),
   }),
   billing: t.router({
-    createCustomer: t.procedure.mutation(() => ({})),
-    createCheckout: t.procedure.mutation(() => ({})),
-    getCustomerPortal: t.procedure.query(() => ({})),
+    createCustomer: procedure.mutation(() => ({})),
+    createCheckout: procedure.mutation(() => ({ url: "" })),
+    getCustomerPortal: procedure.query(() => ({ url: "" })),
   }),
 });
 
-export type AppRouter = typeof appRouter;
+export type AppRouter = typeof dummyRouter;
 
 export const trpc = createTRPCReact<AppRouter>();
 
