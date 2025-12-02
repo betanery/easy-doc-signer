@@ -49,15 +49,23 @@ const Auth = () => {
     refetchOnWindowFocus: false,
   });
 
-  // Fallback plans
-  const plans = (plansQuery.data as any[]) || [
-    { id: 1, name: "Cedro (Grátis)", price: 0 },
-    { id: 2, name: "Jacarandá", price: 39.90 },
-    { id: 3, name: "Angico", price: 99.97 },
-    { id: 4, name: "Aroeira", price: 149.97 },
-    { id: 5, name: "Ipê", price: 199.97 },
-    { id: 6, name: "Mogno", price: 0 },
+  // Extract plans from tRPC response (handles nested json structure)
+  const fallbackPlans = [
+    { id: 1, name: "Cedro (Grátis)", priceBRL: "0.00" },
+    { id: 2, name: "Jacarandá", priceBRL: "39.90" },
+    { id: 3, name: "Angico", priceBRL: "99.97" },
+    { id: 4, name: "Aroeira", priceBRL: "149.97" },
+    { id: 5, name: "Ipê", priceBRL: "199.97" },
+    { id: 6, name: "Mogno", priceBRL: "0.00" },
   ];
+  
+  // Handle nested response structure from tRPC with superjson
+  const plansData = plansQuery.data;
+  const plans = Array.isArray(plansData) 
+    ? plansData 
+    : (plansData as any)?.json 
+      ? (plansData as any).json 
+      : fallbackPlans;
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -291,7 +299,7 @@ const Auth = () => {
                       <SelectContent>
                         {plans.map((plan: any) => (
                           <SelectItem key={plan.id} value={String(plan.id)}>
-                            {plan.name} {plan.price > 0 ? `- R$ ${plan.price.toFixed(2)}/mês` : ''}
+                            {plan.name} {plan.priceBRL && parseFloat(plan.priceBRL) > 0 ? `- R$ ${plan.priceBRL}/mês` : ''}
                           </SelectItem>
                         ))}
                       </SelectContent>
