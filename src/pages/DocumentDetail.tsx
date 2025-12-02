@@ -13,7 +13,8 @@ const DocumentDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { getById, download, generateActionUrl, sendReminder, loading } = useTRPCDocuments();
+  // CORRECTED: Using get instead of getById, createActionUrl instead of generateActionUrl
+  const { get, download, createActionUrl, sendReminder, loading } = useTRPCDocuments();
   const { fetchUser } = useTRPCAuth();
   const [document, setDocument] = useState<Document | null>(null);
 
@@ -26,7 +27,8 @@ const DocumentDetail = () => {
       return;
     }
 
-    const data = await getById(Number(id));
+    // CORRECTED: Using get with string ID (was getById with number)
+    const data = await get(id);
     if (data) {
       setDocument(data);
     } else {
@@ -37,7 +39,7 @@ const DocumentDetail = () => {
       });
       navigate("/documents");
     }
-  }, [id, getById, fetchUser, navigate, toast]);
+  }, [id, get, fetchUser, navigate, toast]);
 
   useEffect(() => {
     fetchDocument();
@@ -45,12 +47,14 @@ const DocumentDetail = () => {
 
   const handleDownload = async () => {
     if (!id) return;
-    await download(Number(id));
+    // CORRECTED: Using string ID
+    await download(id);
   };
 
   const handleGenerateUrl = async (flowActionId: string) => {
     if (!id) return;
-    const url = await generateActionUrl(Number(id), flowActionId);
+    // CORRECTED: Using createActionUrl with string documentId
+    const url = await createActionUrl(id, flowActionId);
     if (url) {
       window.open(url, '_blank');
     }
@@ -58,7 +62,8 @@ const DocumentDetail = () => {
 
   const handleSendReminder = async (flowActionId: string) => {
     if (!id) return;
-    await sendReminder(Number(id), flowActionId);
+    // CORRECTED: Using string documentId
+    await sendReminder(id, flowActionId);
   };
 
   const getStatusBadge = (status: DocumentStatus) => {
@@ -221,7 +226,7 @@ const DocumentDetail = () => {
               <CardContent className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">ID:</span>
-                  <span className="font-mono">{document.id}</span>
+                  <span className="font-mono text-xs">{document.id}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Status:</span>

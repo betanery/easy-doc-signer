@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
-import { useTRPCDocuments, useTRPCStats, useTRPCFolders } from '@/hooks/useTRPC';
+import { useTRPCDocuments, useTRPCStats } from '@/hooks/useTRPC';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,7 +21,7 @@ import {
 import { toast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import PremiumBlockModal from '@/components/PremiumBlockModal';
-import type { SignerRole, AuthType, SignatureType, Folder } from '@/lib/trpc/types';
+import type { SignerRole, AuthType, SignatureType } from '@/lib/trpc/types';
 
 interface Signer {
   id: string;
@@ -37,13 +37,10 @@ export default function DocumentUpload() {
   const navigate = useNavigate();
   const { upload, create, loading } = useTRPCDocuments();
   const { getStats } = useTRPCStats();
-  const { list: listFolders } = useTRPCFolders();
   
   const [file, setFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [documentName, setDocumentName] = useState('');
-  const [folderId, setFolderId] = useState<number | undefined>();
-  const [folders, setFolders] = useState<Folder[]>([]);
   const [signers, setSigners] = useState<Signer[]>([
     { id: crypto.randomUUID(), name: '', email: '', role: 'SIGNER', orderStep: 1, authType: 'EMAIL', signatureType: 'ELECTRONIC' }
   ]);
@@ -64,14 +61,6 @@ export default function DocumentUpload() {
     };
     checkLimits();
   }, [getStats]);
-
-  useEffect(() => {
-    const loadFolders = async () => {
-      const foldersData = await listFolders();
-      setFolders(foldersData);
-    };
-    loadFolders();
-  }, [listFolders]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const droppedFile = acceptedFiles[0];
@@ -175,7 +164,7 @@ export default function DocumentUpload() {
     const uploadId = await upload(file);
     if (!uploadId) return;
 
-    // Step 2: Create document
+    // Step 2: Create document (without folderId - folders not available in backend)
     const document = await create(
       uploadId,
       documentName || file.name,
@@ -186,8 +175,7 @@ export default function DocumentUpload() {
         orderStep: s.orderStep,
         authType: s.authType,
         signatureType: s.signatureType,
-      })),
-      folderId
+      }))
     );
 
     if (document) {
@@ -296,23 +284,6 @@ export default function DocumentUpload() {
                   value={documentName}
                   onChange={(e) => setDocumentName(e.target.value)}
                 />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="folder">Pasta (Opcional)</Label>
-                <Select value={folderId ? String(folderId) : ''} onValueChange={(v) => setFolderId(v ? Number(v) : undefined)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione uma pasta" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Nenhuma pasta</SelectItem>
-                    {folders.map((folder) => (
-                      <SelectItem key={folder.id} value={String(folder.id)}>
-                        {folder.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
             </CardContent>
           </Card>

@@ -1,4 +1,3 @@
-import { createTRPCProxyClient, httpBatchLink } from '@trpc/client';
 import type {
   SignupInput,
   LoginInput,
@@ -9,26 +8,14 @@ import type {
   CreateDocumentInput,
   ListDocumentsInput,
   Document,
-  GenerateActionUrlInput,
+  CreateActionUrlInput,
   SendReminderInput,
-  CreateFolderInput,
-  ListFoldersInput,
-  UpdateFolderInput,
-  DeleteFolderInput,
-  Folder,
-  CreateOrganizationInput,
-  ListOrganizationsInput,
-  UpdateOrganizationInput,
-  AddUserToOrgInput,
-  RemoveUserFromOrgInput,
-  Organization,
-  OrganizationUser,
   Plan,
   Stats,
   UpgradePlanInput,
   ConfigureLacunaInput,
   LacunaStatus,
-  CreateCheckoutInput,
+  CreateCheckoutSessionInput,
   CheckoutResponse,
   CustomerPortalResponse,
 } from './types';
@@ -108,7 +95,7 @@ export const trpcAuth = {
     trpcCall<void, AuthUser>('auth.me', 'query'),
 };
 
-// Document procedures
+// Document procedures - CORRECTED route names
 export const trpcDocuments = {
   upload: (input: UploadInput) =>
     trpcCall<UploadInput, UploadResponse>('mdsign.documents.upload', 'mutation', input),
@@ -119,65 +106,19 @@ export const trpcDocuments = {
   list: (input?: ListDocumentsInput) =>
     trpcCall<ListDocumentsInput | undefined, Document[]>('mdsign.documents.list', 'query', input),
   
-  getById: (id: number) =>
-    trpcCall<{ id: number }, Document>('mdsign.documents.getById', 'query', { id }),
+  // CORRECTED: getById -> get with documentId as string
+  get: (documentId: string) =>
+    trpcCall<{ documentId: string }, Document>('mdsign.documents.get', 'query', { documentId }),
   
-  generateActionUrl: (input: GenerateActionUrlInput) =>
-    trpcCall<GenerateActionUrlInput, { url: string }>('mdsign.documents.generateActionUrl', 'mutation', input),
+  // CORRECTED: generateActionUrl -> createActionUrl
+  createActionUrl: (input: CreateActionUrlInput) =>
+    trpcCall<CreateActionUrlInput, { url: string }>('mdsign.documents.createActionUrl', 'mutation', input),
   
   sendReminder: (input: SendReminderInput) =>
     trpcCall<SendReminderInput, { success: boolean }>('mdsign.documents.sendReminder', 'mutation', input),
   
-  download: (id: number) =>
-    trpcCall<{ id: number }, { downloadUrl: string }>('mdsign.documents.download', 'query', { id }),
-};
-
-// Folder procedures
-export const trpcFolders = {
-  create: (input: CreateFolderInput) =>
-    trpcCall<CreateFolderInput, Folder>('mdsign.folders.create', 'mutation', input),
-  
-  list: (input?: ListFoldersInput) =>
-    trpcCall<ListFoldersInput | undefined, Folder[]>('mdsign.folders.list', 'query', input),
-  
-  getById: (id: number) =>
-    trpcCall<{ id: number }, Folder>('mdsign.folders.getById', 'query', { id }),
-  
-  tree: () =>
-    trpcCall<void, Folder[]>('mdsign.folders.tree', 'query'),
-  
-  update: (input: UpdateFolderInput) =>
-    trpcCall<UpdateFolderInput, Folder>('mdsign.folders.update', 'mutation', input),
-  
-  delete: (input: DeleteFolderInput) =>
-    trpcCall<DeleteFolderInput, { success: boolean }>('mdsign.folders.delete', 'mutation', input),
-};
-
-// Organization procedures
-export const trpcOrganizations = {
-  create: (input: CreateOrganizationInput) =>
-    trpcCall<CreateOrganizationInput, Organization>('mdsign.organizations.create', 'mutation', input),
-  
-  list: (input?: ListOrganizationsInput) =>
-    trpcCall<ListOrganizationsInput | undefined, Organization[]>('mdsign.organizations.list', 'query', input),
-  
-  getById: (id: number) =>
-    trpcCall<{ id: number }, Organization>('mdsign.organizations.getById', 'query', { id }),
-  
-  update: (input: UpdateOrganizationInput) =>
-    trpcCall<UpdateOrganizationInput, Organization>('mdsign.organizations.update', 'mutation', input),
-  
-  delete: (id: number) =>
-    trpcCall<{ id: number }, { success: boolean }>('mdsign.organizations.delete', 'mutation', { id }),
-  
-  addUser: (input: AddUserToOrgInput) =>
-    trpcCall<AddUserToOrgInput, { success: boolean }>('mdsign.organizations.addUser', 'mutation', input),
-  
-  removeUser: (input: RemoveUserFromOrgInput) =>
-    trpcCall<RemoveUserFromOrgInput, { success: boolean }>('mdsign.organizations.removeUser', 'mutation', input),
-  
-  users: (organizationId: number) =>
-    trpcCall<{ organizationId: number }, OrganizationUser[]>('mdsign.organizations.users', 'query', { organizationId }),
+  download: (documentId: string) =>
+    trpcCall<{ documentId: string }, { downloadUrl: string }>('mdsign.documents.download', 'query', { documentId }),
 };
 
 // Plans procedures
@@ -207,24 +148,21 @@ export const trpcLacuna = {
     trpcCall<void, { success: boolean }>('mdsign.removeLacunaCredentials', 'mutation'),
 };
 
-// Billing procedures
+// Billing procedures - CORRECTED route names
 export const trpcBilling = {
-  createCustomer: () =>
-    trpcCall<void, { customerId: string }>('billing.createCustomer', 'mutation'),
+  // CORRECTED: createCheckout -> createCheckoutSession with planName
+  createCheckoutSession: (input: CreateCheckoutSessionInput) =>
+    trpcCall<CreateCheckoutSessionInput, CheckoutResponse>('billing.createCheckoutSession', 'mutation', input),
   
-  createCheckout: (input: CreateCheckoutInput) =>
-    trpcCall<CreateCheckoutInput, CheckoutResponse>('billing.createCheckout', 'mutation', input),
-  
-  getCustomerPortal: () =>
-    trpcCall<void, CustomerPortalResponse>('billing.getCustomerPortal', 'query'),
+  // CORRECTED: getCustomerPortal -> createPortalSession
+  createPortalSession: () =>
+    trpcCall<void, CustomerPortalResponse>('billing.createPortalSession', 'mutation'),
 };
 
-// Export all as single object
+// Export all as single object (WITHOUT folders and organizations - not available in backend)
 export const trpc = {
   auth: trpcAuth,
   documents: trpcDocuments,
-  folders: trpcFolders,
-  organizations: trpcOrganizations,
   plans: trpcPlans,
   stats: trpcStats,
   lacuna: trpcLacuna,
