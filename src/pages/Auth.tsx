@@ -83,15 +83,20 @@ const Auth = () => {
       return;
     }
 
+    const loginInput = { email: email.trim(), password };
+    console.log("[Auth] Login input:", JSON.stringify(loginInput));
+
     (loginMutation.mutate as any)(
-      { email: email.trim(), password },
+      loginInput,
       {
         onSuccess: (res: any) => {
+          console.log("[Auth] Login success:", res);
           setAuthToken(res.token);
           toast.success("Login realizado com sucesso!");
           navigate("/dashboard");
         },
         onError: (error: any) => {
+          console.log("[Auth] Login error:", error);
           toast.error(error.message || "Erro ao fazer login");
         },
       }
