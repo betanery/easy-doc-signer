@@ -3,10 +3,11 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DocumentNotifications } from "@/components/DocumentNotifications";
-import { FileText, Users, Settings, LogOut, Upload, FolderOpen, Building2 } from "lucide-react";
+import { FileText, Settings, LogOut, Upload, FolderOpen, Building2 } from "lucide-react";
 import { DashboardStats } from "@/components/DashboardStats";
 import { DocumentsChart } from "@/components/DocumentsChart";
 import { Logo } from "@/components/Logo";
+import { ManageSubscriptionButton } from "@/components/ManageSubscriptionButton";
 import { useTRPCAuth } from "@/hooks/useTRPC";
 import type { AuthUser } from "@/lib/trpc/types";
 
@@ -174,6 +175,16 @@ const Dashboard = () => {
                   Ver Planos
                 </Link>
               </Button>
+            </div>
+
+            <div className="flex items-center gap-4 p-5 border rounded-xl hover:border-primary/40 transition-all group hover:shadow-md bg-card/50">
+              <div className="flex-1">
+                <h3 className="font-semibold group-hover:text-primary transition-colors">Gerenciar Assinatura</h3>
+                <p className="text-sm text-muted-foreground">
+                  Altere seu plano, método de pagamento ou cancele
+                </p>
+              </div>
+              <ManageSubscriptionButton />
             </div>
           </CardContent>
         </Card>
