@@ -1,5 +1,5 @@
 import { createTRPCReact } from "@trpc/react-query";
-import { httpLink } from "@trpc/client";
+import { httpBatchLink } from "@trpc/client";
 import superjson from "superjson";
 
 // Workaround for tRPC v11 strict type checking without backend types
@@ -11,23 +11,26 @@ export const trpc = createUntypedTRPC();
 const TRPC_URL = import.meta.env.VITE_API_URL || "https://mdsignapi-2n7ddbk9.manus.space/api/trpc";
 
 export const trpcClient = (trpc as any).createClient({
-  transformer: superjson,
   links: [
-    httpLink({
+    httpBatchLink({
       url: TRPC_URL,
+      headers() {
+        if (typeof window === "undefined") return {};
+        const token = localStorage.getItem("auth_token");
+        return {
+          'Content-Type': 'application/json',
+          ...(token ? { authorization: `Bearer ${token}` } : {}),
+        };
+      },
       fetch(url, options) {
         return fetch(url, {
           ...options,
           credentials: 'include',
         });
       },
-      headers() {
-        if (typeof window === "undefined") return {};
-        const token = localStorage.getItem("auth_token");
-        return token ? { authorization: `Bearer ${token}` } : {};
-      },
     }),
   ],
+  transformer: superjson,
 });
 
 // Auth token management
