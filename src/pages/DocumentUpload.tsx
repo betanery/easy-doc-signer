@@ -1,14 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
-import { useMDSignAPI } from '@/hooks/useMDSignAPI';
+import { useTRPCDocuments, useTRPCStats, useTRPCFolders } from '@/hooks/useTRPC';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Logo } from "@/components/Logo";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Upload, 
   FileText, 
@@ -21,21 +21,31 @@ import {
 import { toast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import PremiumBlockModal from '@/components/PremiumBlockModal';
+import type { SignerRole, AuthType, SignatureType, Folder } from '@/lib/trpc/types';
 
 interface Signer {
   id: string;
   name: string;
   email: string;
+  role: SignerRole;
+  orderStep: number;
+  authType: AuthType;
+  signatureType: SignatureType;
 }
 
 export default function DocumentUpload() {
   const navigate = useNavigate();
-  const { createDocument, getStats, loading } = useMDSignAPI();
+  const { upload, create, loading } = useTRPCDocuments();
+  const { getStats } = useTRPCStats();
+  const { list: listFolders } = useTRPCFolders();
+  
   const [file, setFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
-  const [description, setDescription] = useState('');
+  const [documentName, setDocumentName] = useState('');
+  const [folderId, setFolderId] = useState<number | undefined>();
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [signers, setSigners] = useState<Signer[]>([
-    { id: crypto.randomUUID(), name: '', email: '' }
+    { id: crypto.randomUUID(), name: '', email: '', role: 'SIGNER', orderStep: 1, authType: 'EMAIL', signatureType: 'ELECTRONIC' }
   ]);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<string>('FREE_TRIAL');
@@ -46,10 +56,7 @@ export default function DocumentUpload() {
       const stats = await getStats();
       if (stats) {
         setCurrentPlan(stats.plan);
-        if (stats.plan === 'FREE_TRIAL' && stats.used >= 5) {
-          setIsLimitReached(true);
-          setShowPremiumModal(true);
-        } else if (stats.plan === 'MONTHLY' && stats.limit && stats.used >= stats.limit) {
+        if (!stats.isUnlimited && stats.documentsLimit && stats.documentsUsed >= stats.documentsLimit) {
           setIsLimitReached(true);
           setShowPremiumModal(true);
         }
@@ -58,10 +65,18 @@ export default function DocumentUpload() {
     checkLimits();
   }, [getStats]);
 
+  useEffect(() => {
+    const loadFolders = async () => {
+      const foldersData = await listFolders();
+      setFolders(foldersData);
+    };
+    loadFolders();
+  }, [listFolders]);
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (file) {
-      if (file.type !== 'application/pdf') {
+    const droppedFile = acceptedFiles[0];
+    if (droppedFile) {
+      if (droppedFile.type !== 'application/pdf') {
         toast({
           title: "Formato inválido",
           description: "Por favor, envie apenas arquivos PDF",
@@ -70,7 +85,7 @@ export default function DocumentUpload() {
         return;
       }
 
-      if (file.size > 20 * 1024 * 1024) {
+      if (droppedFile.size > 20 * 1024 * 1024) {
         toast({
           title: "Arquivo muito grande",
           description: "O arquivo deve ter no máximo 20MB",
@@ -79,52 +94,48 @@ export default function DocumentUpload() {
         return;
       }
 
-      setFile(file);
+      setFile(droppedFile);
+      setDocumentName(droppedFile.name.replace('.pdf', ''));
       
-      // Create preview URL
       const reader = new FileReader();
       reader.onload = (e) => {
         setFilePreview(e.target?.result as string);
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(droppedFile);
     }
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      'application/pdf': ['.pdf']
-    },
+    accept: { 'application/pdf': ['.pdf'] },
     maxFiles: 1,
     multiple: false
   });
 
   const addSigner = () => {
-    setSigners([...signers, { id: crypto.randomUUID(), name: '', email: '' }]);
+    const newOrderStep = signers.length + 1;
+    setSigners([...signers, { 
+      id: crypto.randomUUID(), 
+      name: '', 
+      email: '', 
+      role: 'SIGNER', 
+      orderStep: newOrderStep,
+      authType: 'EMAIL',
+      signatureType: 'ELECTRONIC'
+    }]);
   };
 
   const removeSigner = (id: string) => {
     if (signers.length > 1) {
-      setSigners(signers.filter(s => s.id !== id));
+      const filtered = signers.filter(s => s.id !== id);
+      // Reorder steps
+      const reordered = filtered.map((s, idx) => ({ ...s, orderStep: idx + 1 }));
+      setSigners(reordered);
     }
   };
 
-  const updateSigner = (id: string, field: 'name' | 'email', value: string) => {
+  const updateSigner = <K extends keyof Signer>(id: string, field: K, value: Signer[K]) => {
     setSigners(signers.map(s => s.id === id ? { ...s, [field]: value } : s));
-  };
-
-  const convertFileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = reader.result as string;
-        // Remove data URL prefix
-        const base64Content = base64.split(',')[1];
-        resolve(base64Content);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -139,7 +150,6 @@ export default function DocumentUpload() {
       return;
     }
 
-    // Validate signers
     const validSigners = signers.filter(s => s.name && s.email);
     if (validSigners.length === 0) {
       toast({
@@ -150,7 +160,6 @@ export default function DocumentUpload() {
       return;
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const invalidEmails = validSigners.filter(s => !emailRegex.test(s.email));
     if (invalidEmails.length > 0) {
@@ -162,15 +171,24 @@ export default function DocumentUpload() {
       return;
     }
 
-    const document = await createDocument({
-      name: file.name,
-      description: description || undefined,
-      file: file,
-      signers: validSigners.map(s => ({
+    // Step 1: Upload file
+    const uploadId = await upload(file);
+    if (!uploadId) return;
+
+    // Step 2: Create document
+    const document = await create(
+      uploadId,
+      documentName || file.name,
+      validSigners.map(s => ({
         name: s.name,
-        email: s.email
-      }))
-    });
+        email: s.email,
+        role: s.role,
+        orderStep: s.orderStep,
+        authType: s.authType,
+        signatureType: s.signatureType,
+      })),
+      folderId
+    );
 
     if (document) {
       navigate('/documents');
@@ -264,21 +282,38 @@ export default function DocumentUpload() {
             </CardContent>
           </Card>
 
-          {/* Description */}
+          {/* Document Details */}
           <Card>
             <CardHeader>
-              <CardTitle>Descrição (Opcional)</CardTitle>
-              <CardDescription>
-                Adicione uma descrição ou mensagem para os signatários
-              </CardDescription>
+              <CardTitle>Detalhes do Documento</CardTitle>
             </CardHeader>
-            <CardContent>
-              <Textarea
-                placeholder="Ex: Contrato de prestação de serviços - Por favor, revisar e assinar..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={4}
-              />
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="doc-name">Nome do Documento</Label>
+                <Input
+                  id="doc-name"
+                  placeholder="Ex: Contrato de Prestação de Serviços"
+                  value={documentName}
+                  onChange={(e) => setDocumentName(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="folder">Pasta (Opcional)</Label>
+                <Select value={folderId ? String(folderId) : ''} onValueChange={(v) => setFolderId(v ? Number(v) : undefined)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma pasta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Nenhuma pasta</SelectItem>
+                    {folders.map((folder) => (
+                      <SelectItem key={folder.id} value={String(folder.id)}>
+                        {folder.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </CardContent>
           </Card>
 
@@ -300,25 +335,36 @@ export default function DocumentUpload() {
             </CardHeader>
             <CardContent className="space-y-4">
               {signers.map((signer, index) => (
-                <div key={signer.id} className="flex gap-4 items-start p-4 border rounded-lg">
-                  <Badge variant="outline" className="mt-2">
-                    {index + 1}
-                  </Badge>
-                  <div className="flex-1 space-y-4">
-                    <div>
-                      <Label htmlFor={`name-${signer.id}`}>Nome</Label>
+                <div key={signer.id} className="p-4 border rounded-lg space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="outline">
+                      Etapa {signer.orderStep}
+                    </Badge>
+                    {signers.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeSigner(signer.id)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                  
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Nome</Label>
                       <Input
-                        id={`name-${signer.id}`}
-                        placeholder="Nome completo do signatário"
+                        placeholder="Nome completo"
                         value={signer.name}
                         onChange={(e) => updateSigner(signer.id, 'name', e.target.value)}
                         required
                       />
                     </div>
-                    <div>
-                      <Label htmlFor={`email-${signer.id}`}>E-mail</Label>
+                    <div className="space-y-2">
+                      <Label>E-mail</Label>
                       <Input
-                        id={`email-${signer.id}`}
                         type="email"
                         placeholder="email@exemplo.com"
                         value={signer.email}
@@ -326,18 +372,46 @@ export default function DocumentUpload() {
                         required
                       />
                     </div>
+                    <div className="space-y-2">
+                      <Label>Função</Label>
+                      <Select value={signer.role} onValueChange={(v) => updateSigner(signer.id, 'role', v as SignerRole)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="SIGNER">Signatário</SelectItem>
+                          <SelectItem value="APPROVER">Aprovador</SelectItem>
+                          <SelectItem value="OBSERVER">Observador</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Autenticação</Label>
+                      <Select value={signer.authType} onValueChange={(v) => updateSigner(signer.id, 'authType', v as AuthType)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="EMAIL">E-mail</SelectItem>
+                          <SelectItem value="SMS">SMS</SelectItem>
+                          <SelectItem value="EMAIL_SMS">E-mail + SMS</SelectItem>
+                          <SelectItem value="EMAIL_SELFIE">E-mail + Selfie</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Tipo de Assinatura</Label>
+                      <Select value={signer.signatureType} onValueChange={(v) => updateSigner(signer.id, 'signatureType', v as SignatureType)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ELECTRONIC">Eletrônica</SelectItem>
+                          <SelectItem value="DIGITAL_CERT">Com Certificado Digital</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  {signers.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeSigner(signer.id)}
-                      className="mt-2"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  )}
                 </div>
               ))}
 

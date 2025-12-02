@@ -1,67 +1,38 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DocumentNotifications } from "@/components/DocumentNotifications";
-import { useToast } from "@/hooks/use-toast";
-import { FileText, Users, Settings, LogOut, Upload } from "lucide-react";
-import type { User } from "@supabase/supabase-js";
+import { FileText, Users, Settings, LogOut, Upload, FolderOpen, Building2 } from "lucide-react";
 import { DashboardStats } from "@/components/DashboardStats";
 import { DocumentsChart } from "@/components/DocumentsChart";
 import { Logo } from "@/components/Logo";
+import { useTRPCAuth } from "@/hooks/useTRPC";
+import type { AuthUser } from "@/lib/trpc/types";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { loading, user, fetchUser, logout } = useTRPCAuth();
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
 
   useEffect(() => {
-    // Check authentication
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
+      const userData = await fetchUser();
+      if (!userData) {
         navigate("/auth");
         return;
       }
-      
-      setUser(session.user);
-      setLoading(false);
+      setCurrentUser(userData);
     };
-
     checkAuth();
+  }, [fetchUser, navigate]);
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_OUT") {
-        navigate("/auth");
-      } else if (session) {
-        setUser(session.user);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      toast({
-        title: "Logout realizado",
-        description: "Você saiu da sua conta com sucesso.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erro ao sair",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
+  const handleSignOut = () => {
+    logout();
+    navigate("/auth");
   };
 
-  if (loading) {
+  if (loading || !currentUser) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -79,7 +50,7 @@ const Dashboard = () => {
           <div className="flex items-center gap-4">
             <DocumentNotifications />
             <span className="text-sm text-muted-foreground hidden md:inline">
-              {user?.email}
+              {currentUser.email}
             </span>
             <Button variant="ghost" size="icon" onClick={handleSignOut} className="hover:bg-primary/10">
               <LogOut className="h-5 w-5" />
@@ -93,7 +64,10 @@ const Dashboard = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
           <p className="text-muted-foreground">
-            Bem-vindo ao SignDoc, {user?.user_metadata?.full_name || "Usuário"}!
+            Bem-vindo ao MDSign, {currentUser.name}!
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Organização: {currentUser.tenant.name} • Plano: {currentUser.tenant.plan}
           </p>
         </div>
 
@@ -126,38 +100,38 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="group hover:shadow-premium transition-all duration-300 cursor-pointer border-secondary/20 hover:border-secondary/40 overflow-hidden relative">
+          <Card className="group hover:shadow-premium transition-all duration-300 cursor-pointer border-secondary/20 hover:border-secondary/40 overflow-hidden relative" onClick={() => navigate('/folders')}>
             <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <CardHeader className="relative">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-secondary to-orange-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Users className="h-8 w-8 text-white" />
+                <FolderOpen className="h-8 w-8 text-white" />
               </div>
-              <CardTitle className="text-xl">Usuários</CardTitle>
+              <CardTitle className="text-xl">Pastas</CardTitle>
               <CardDescription>
-                Gerencie sua equipe
+                Organize seus documentos em pastas
               </CardDescription>
             </CardHeader>
             <CardContent className="relative">
-              <Button className="w-full" variant="outline" disabled>
-                Em breve
+              <Button className="w-full" variant="outline" asChild>
+                <Link to="/folders">Acessar</Link>
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="group hover:shadow-premium transition-all duration-300 cursor-pointer border-primary/20 hover:border-primary/40 overflow-hidden relative" onClick={() => navigate('/tenants')}>
+          <Card className="group hover:shadow-premium transition-all duration-300 cursor-pointer border-primary/20 hover:border-primary/40 overflow-hidden relative" onClick={() => navigate('/organizations')}>
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <CardHeader className="relative">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Settings className="h-8 w-8 text-white" />
+                <Building2 className="h-8 w-8 text-white" />
               </div>
-              <CardTitle className="text-xl">Gerenciar Tenants</CardTitle>
+              <CardTitle className="text-xl">Organizações</CardTitle>
               <CardDescription>
-                Configure organizações e usuários
+                Gerencie suas organizações
               </CardDescription>
             </CardHeader>
             <CardContent className="relative">
               <Button className="w-full bg-gradient-to-r from-primary to-primary-glow hover:opacity-90 transition-opacity" asChild>
-                <Link to="/tenants">Acessar</Link>
+                <Link to="/organizations">Acessar</Link>
               </Button>
             </CardContent>
           </Card>
@@ -166,32 +140,17 @@ const Dashboard = () => {
         <Card className="mt-8 border-primary/20 shadow-elegant overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 pointer-events-none" />
           <CardHeader className="relative">
-            <CardTitle className="text-xl">Próximos Passos</CardTitle>
+            <CardTitle className="text-xl">Ações Rápidas</CardTitle>
             <CardDescription>
-              Complete a configuração da sua conta
+              Acesso rápido às principais funcionalidades
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 relative">
             <div className="flex items-center gap-4 p-5 border rounded-xl hover:border-primary/40 transition-all group hover:shadow-md bg-card/50">
               <div className="flex-1">
-                <h3 className="font-semibold group-hover:text-primary transition-colors">Configurar Tenant</h3>
+                <h3 className="font-semibold group-hover:text-primary transition-colors">Novo Documento</h3>
                 <p className="text-sm text-muted-foreground">
-                  Crie ou associe-se a uma organização
-                </p>
-              </div>
-              <Button asChild className="bg-gradient-to-r from-primary to-primary-glow">
-                <Link to="/tenants">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Configurar
-                </Link>
-              </Button>
-            </div>
-            
-            <div className="flex items-center gap-4 p-5 border rounded-xl hover:border-primary/40 transition-all group hover:shadow-md bg-card/50">
-              <div className="flex-1">
-                <h3 className="font-semibold group-hover:text-primary transition-colors">Upload de Documentos</h3>
-                <p className="text-sm text-muted-foreground">
-                  Envie seu primeiro documento para assinatura
+                  Envie um documento para assinatura
                 </p>
               </div>
               <Button asChild className="bg-gradient-to-r from-primary to-primary-glow">
@@ -202,14 +161,19 @@ const Dashboard = () => {
               </Button>
             </div>
             
-            <div className="flex items-center gap-4 p-5 border rounded-xl opacity-60 bg-card/30">
+            <div className="flex items-center gap-4 p-5 border rounded-xl hover:border-primary/40 transition-all group hover:shadow-md bg-card/50">
               <div className="flex-1">
-                <h3 className="font-semibold">Integração Lacuna Signer</h3>
+                <h3 className="font-semibold group-hover:text-primary transition-colors">Ver Planos</h3>
                 <p className="text-sm text-muted-foreground">
-                  Configure suas credenciais da API
+                  Compare e faça upgrade do seu plano
                 </p>
               </div>
-              <Button disabled variant="outline">Integrar</Button>
+              <Button asChild variant="outline">
+                <Link to="/planos">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Ver Planos
+                </Link>
+              </Button>
             </div>
           </CardContent>
         </Card>
