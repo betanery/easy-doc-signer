@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
 
 const API_BASE_URL = 'https://api.mdsign.com.br';
@@ -32,22 +32,28 @@ interface StatsResponse {
   isUnlimited: boolean;
 }
 
+interface APIError {
+  status?: number;
+  data?: { error?: string };
+  message?: string;
+}
+
 export const useMDSignAPI = () => {
   const [loading, setLoading] = useState(false);
 
-  const getAuthToken = () => {
+  const getAuthToken = useCallback(() => {
     return localStorage.getItem('mdsign_token');
-  };
+  }, []);
 
-  const getHeaders = () => {
+  const getHeaders = useCallback(() => {
     const token = getAuthToken();
     return {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     };
-  };
+  }, [getAuthToken]);
 
-  const handleError = (error: any, defaultMessage: string) => {
+  const handleError = useCallback((error: APIError, defaultMessage: string) => {
     console.error(defaultMessage, error);
     
     if (error.status === 402) {
@@ -72,9 +78,9 @@ export const useMDSignAPI = () => {
         variant: 'destructive',
       });
     }
-  };
+  }, []);
 
-  const getStats = async (): Promise<StatsResponse | null> => {
+  const getStats = useCallback(async (): Promise<StatsResponse | null> => {
     try {
       setLoading(true);
       const response = await fetch(`${API_BASE_URL}/mdsign/stats`, {
@@ -88,14 +94,14 @@ export const useMDSignAPI = () => {
       const data = await response.json();
       return data;
     } catch (error) {
-      handleError(error, 'Erro ao buscar estatísticas');
+      handleError(error as APIError, 'Erro ao buscar estatísticas');
       return null;
     } finally {
       setLoading(false);
     }
-  };
+  }, [getHeaders, handleError]);
 
-  const listDocuments = async (): Promise<MDSignDocument[]> => {
+  const listDocuments = useCallback(async (): Promise<MDSignDocument[]> => {
     try {
       setLoading(true);
       const response = await fetch(`${API_BASE_URL}/mdsign/documents`, {
@@ -109,14 +115,14 @@ export const useMDSignAPI = () => {
       const data = await response.json();
       return data.documents || [];
     } catch (error) {
-      handleError(error, 'Erro ao listar documentos');
+      handleError(error as APIError, 'Erro ao listar documentos');
       return [];
     } finally {
       setLoading(false);
     }
-  };
+  }, [getHeaders, handleError]);
 
-  const createDocument = async (params: CreateDocumentParams): Promise<MDSignDocument | null> => {
+  const createDocument = useCallback(async (params: CreateDocumentParams): Promise<MDSignDocument | null> => {
     try {
       setLoading(true);
 
@@ -175,14 +181,14 @@ export const useMDSignAPI = () => {
 
       return data;
     } catch (error) {
-      handleError(error, 'Erro ao criar documento');
+      handleError(error as APIError, 'Erro ao criar documento');
       return null;
     } finally {
       setLoading(false);
     }
-  };
+  }, [getStats, getHeaders, handleError]);
 
-  const getDocument = async (documentId: string): Promise<MDSignDocument | null> => {
+  const getDocument = useCallback(async (documentId: string): Promise<MDSignDocument | null> => {
     try {
       setLoading(true);
       const response = await fetch(`${API_BASE_URL}/mdsign/documents/${documentId}`, {
@@ -196,14 +202,14 @@ export const useMDSignAPI = () => {
       const data = await response.json();
       return data;
     } catch (error) {
-      handleError(error, 'Erro ao buscar documento');
+      handleError(error as APIError, 'Erro ao buscar documento');
       return null;
     } finally {
       setLoading(false);
     }
-  };
+  }, [getHeaders, handleError]);
 
-  const getActionUrl = async (documentId: string, signerId: string): Promise<string | null> => {
+  const getActionUrl = useCallback(async (documentId: string, signerId: string): Promise<string | null> => {
     try {
       const response = await fetch(`${API_BASE_URL}/mdsign/documents/${documentId}/action-url/${signerId}`, {
         headers: getHeaders(),
@@ -216,12 +222,12 @@ export const useMDSignAPI = () => {
       const data = await response.json();
       return data.url;
     } catch (error) {
-      handleError(error, 'Erro ao gerar URL de assinatura');
+      handleError(error as APIError, 'Erro ao gerar URL de assinatura');
       return null;
     }
-  };
+  }, [getHeaders, handleError]);
 
-  const downloadDocument = async (documentId: string): Promise<void> => {
+  const downloadDocument = useCallback(async (documentId: string): Promise<void> => {
     try {
       const response = await fetch(`${API_BASE_URL}/mdsign/documents/${documentId}/download`, {
         headers: getHeaders(),
@@ -246,9 +252,9 @@ export const useMDSignAPI = () => {
         description: 'Documento baixado com sucesso!',
       });
     } catch (error) {
-      handleError(error, 'Erro ao baixar documento');
+      handleError(error as APIError, 'Erro ao baixar documento');
     }
-  };
+  }, [getHeaders, handleError]);
 
   return {
     loading,

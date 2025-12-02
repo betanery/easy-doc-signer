@@ -7,7 +7,23 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/Logo";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { z } from "zod";
+
+// Validation schemas
+const loginSchema = z.object({
+  email: z.string().email("Email inválido"),
+  password: z.string().min(1, "Senha é obrigatória"),
+});
+
+const signupSchema = z.object({
+  name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres").max(100, "Nome muito longo"),
+  email: z.string().email("Email inválido"),
+  password: z.string()
+    .min(8, "Senha deve ter pelo menos 8 caracteres")
+    .regex(/[A-Z]/, "Senha deve ter pelo menos uma letra maiúscula")
+    .regex(/[0-9]/, "Senha deve ter pelo menos um número"),
+});
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -18,14 +34,40 @@ const Auth = () => {
   const [signupName, setSignupName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Check if already authenticated
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/dashboard");
+      }
+    };
+    checkSession();
+  }, [navigate]);
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+
+    // Validate input
+    const validation = loginSchema.safeParse({ email, password });
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      validation.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0] as string] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      return;
+    }
+
     setLoading(true);
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim(),
         password,
       });
 
@@ -46,10 +88,11 @@ const Auth = () => {
         });
         navigate("/dashboard");
       }
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
       toast({
         title: "Erro ao fazer login",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -59,23 +102,53 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+
+    // Validate input
+    const validation = signupSchema.safeParse({
+      name: signupName,
+      email: signupEmail,
+      password: signupPassword,
+    });
+    
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      validation.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[`signup_${err.path[0]}`] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      return;
+    }
+
     setLoading(true);
 
     try {
       const redirectUrl = `${window.location.origin}/dashboard`;
 
       const { data, error } = await supabase.auth.signUp({
-        email: signupEmail,
+        email: signupEmail.trim(),
         password: signupPassword,
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            full_name: signupName,
+            full_name: signupName.trim(),
           },
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes("User already registered")) {
+          toast({
+            title: "Usuário já existe",
+            description: "Este email já está cadastrado. Tente fazer login.",
+            variant: "destructive",
+          });
+          return;
+        }
+        throw error;
+      }
 
       if (data.user) {
         toast({
@@ -84,10 +157,11 @@ const Auth = () => {
         });
         navigate("/dashboard");
       }
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
       toast({
         title: "Erro ao criar conta",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -135,8 +209,10 @@ const Auth = () => {
                       placeholder="seu@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      className={errors.email ? "border-destructive" : ""}
                       required
                     />
+                    {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
                   </div>
                   
                   <div className="space-y-2">
@@ -146,8 +222,10 @@ const Auth = () => {
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      className={errors.password ? "border-destructive" : ""}
                       required
                     />
+                    {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
                   </div>
                 </CardContent>
 
@@ -177,8 +255,10 @@ const Auth = () => {
                       placeholder="Seu nome"
                       value={signupName}
                       onChange={(e) => setSignupName(e.target.value)}
+                      className={errors.signup_name ? "border-destructive" : ""}
                       required
                     />
+                    {errors.signup_name && <p className="text-sm text-destructive">{errors.signup_name}</p>}
                   </div>
                   
                   <div className="space-y-2">
@@ -189,8 +269,10 @@ const Auth = () => {
                       placeholder="seu@email.com"
                       value={signupEmail}
                       onChange={(e) => setSignupEmail(e.target.value)}
+                      className={errors.signup_email ? "border-destructive" : ""}
                       required
                     />
+                    {errors.signup_email && <p className="text-sm text-destructive">{errors.signup_email}</p>}
                   </div>
                   
                   <div className="space-y-2">
@@ -200,8 +282,11 @@ const Auth = () => {
                       type="password"
                       value={signupPassword}
                       onChange={(e) => setSignupPassword(e.target.value)}
+                      className={errors.signup_password ? "border-destructive" : ""}
                       required
                     />
+                    {errors.signup_password && <p className="text-sm text-destructive">{errors.signup_password}</p>}
+                    <p className="text-xs text-muted-foreground">Mínimo 8 caracteres, 1 maiúscula e 1 número</p>
                   </div>
                 </CardContent>
 

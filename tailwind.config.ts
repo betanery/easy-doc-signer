@@ -65,6 +65,12 @@ export default {
           "gradient-start": "hsl(var(--mdsign-gradient-start))",
           "gradient-end": "hsl(var(--mdsign-gradient-end))",
         },
+        status: {
+          success: "hsl(var(--status-success))",
+          warning: "hsl(var(--status-warning))",
+          error: "hsl(var(--status-error))",
+          info: "hsl(var(--status-info))",
+        },
         chart: {
           "1": "hsl(var(--chart-1))",
           "2": "hsl(var(--chart-2))",
