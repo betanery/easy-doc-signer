@@ -10,6 +10,7 @@ import DocumentsList from "./pages/DocumentsList";
 import DocumentUpload from "./pages/DocumentUpload";
 import DocumentDetail from "./pages/DocumentDetail";
 import TenantManagement from "./pages/TenantManagement";
+import Plans from "./pages/Plans";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/documents/upload" element={<DocumentUpload />} />
           <Route path="/documents/:id" element={<DocumentDetail />} />
           <Route path="/tenants" element={<TenantManagement />} />
+          <Route path="/planos" element={<Plans />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

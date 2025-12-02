@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { useMDSignAPI } from '@/hooks/useMDSignAPI';
@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import PremiumBlockModal from '@/components/PremiumBlockModal';
 
 interface Signer {
   id: string;
@@ -29,13 +30,33 @@ interface Signer {
 
 export default function DocumentUpload() {
   const navigate = useNavigate();
-  const { createDocument, loading } = useMDSignAPI();
+  const { createDocument, getStats, loading } = useMDSignAPI();
   const [file, setFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [signers, setSigners] = useState<Signer[]>([
     { id: crypto.randomUUID(), name: '', email: '' }
   ]);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState<string>('FREE_TRIAL');
+  const [isLimitReached, setIsLimitReached] = useState(false);
+
+  useEffect(() => {
+    const checkLimits = async () => {
+      const stats = await getStats();
+      if (stats) {
+        setCurrentPlan(stats.plan);
+        if (stats.plan === 'FREE_TRIAL' && stats.used >= 5) {
+          setIsLimitReached(true);
+          setShowPremiumModal(true);
+        } else if (stats.plan === 'MONTHLY' && stats.limit && stats.used >= stats.limit) {
+          setIsLimitReached(true);
+          setShowPremiumModal(true);
+        }
+      }
+    };
+    checkLimits();
+  }, []);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -158,6 +179,11 @@ export default function DocumentUpload() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      <PremiumBlockModal
+        open={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+        planType={currentPlan}
+      />
       <header className="border-b bg-card/80 backdrop-blur-lg shadow-elegant">
         <div className="container flex h-20 items-center">
           <Button variant="ghost" size="icon" onClick={() => navigate('/documents')} className="hover:bg-primary/10">
@@ -335,7 +361,7 @@ export default function DocumentUpload() {
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading || !file}>
+            <Button type="submit" disabled={loading || !file || isLimitReached} onClick={() => isLimitReached && setShowPremiumModal(true)}>
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
