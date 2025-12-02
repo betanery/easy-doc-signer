@@ -33,21 +33,21 @@ import type {
   CustomerPortalResponse,
 } from './types';
 
-const API_BASE_URL = 'https://3000-iwk771ozs8dstssh7icgq-bccb9cec.manusvm.computer/api/trpc';
+const API_BASE_URL = 'https://mdsignapi-2n7ddbk9.manus.space/api/trpc';
 
-// Get auth token from localStorage
+// Get auth token from localStorage (consistent with react.ts)
 const getAuthToken = (): string | null => {
-  return localStorage.getItem('mdsign_token');
+  return localStorage.getItem('auth_token');
 };
 
 // Set auth token in localStorage
 export const setAuthToken = (token: string): void => {
-  localStorage.setItem('mdsign_token', token);
+  localStorage.setItem('auth_token', token);
 };
 
 // Remove auth token from localStorage
 export const removeAuthToken = (): void => {
-  localStorage.removeItem('mdsign_token');
+  localStorage.removeItem('auth_token');
 };
 
 // Generic fetch wrapper for tRPC-like calls
