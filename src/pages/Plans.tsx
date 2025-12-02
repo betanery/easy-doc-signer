@@ -1,13 +1,17 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Logo } from '@/components/Logo';
-import { ArrowLeft, Check, Crown, Leaf, TreeDeciduous, Trees, Flower2, TreePine } from 'lucide-react';
+import { ArrowLeft, Check, Crown, Leaf, TreeDeciduous, Trees, Flower2, TreePine, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTRPCBilling } from '@/hooks/useTRPC';
+import { toast } from 'sonner';
 
 const plans = [
   {
     id: 'cedro',
+    planId: 1,
     name: 'Cedro',
     icon: Leaf,
     price: 'R$ 0,00',
@@ -17,9 +21,11 @@ const plans = [
     features: ['5 envios gratuitos', 'Assinatura digital válida', 'Suporte por e-mail'],
     highlight: false,
     color: 'from-green-500 to-emerald-600',
+    isFree: true,
   },
   {
     id: 'jacaranda',
+    planId: 2,
     name: 'Jacarandá',
     icon: TreeDeciduous,
     price: 'R$ 39,90',
@@ -30,9 +36,11 @@ const plans = [
     features: ['20 documentos mensais', 'Assinatura digital válida', 'Suporte prioritário', 'Histórico de documentos'],
     highlight: false,
     color: 'from-purple-500 to-violet-600',
+    isFree: false,
   },
   {
     id: 'angico',
+    planId: 3,
     name: 'Angico',
     icon: Trees,
     price: 'R$ 99,97',
@@ -43,9 +51,11 @@ const plans = [
     features: ['Documentos ilimitados', '4 usuários inclusos', 'API disponível', 'Suporte dedicado', 'Relatórios avançados'],
     highlight: true,
     color: 'from-[#CEA32A] to-[#E5B82A]',
+    isFree: false,
   },
   {
     id: 'aroeira',
+    planId: 4,
     name: 'Aroeira',
     icon: Flower2,
     price: 'R$ 149,97',
@@ -56,9 +66,11 @@ const plans = [
     features: ['Documentos ilimitados', '6 usuários inclusos', 'API disponível', 'Webhooks', 'Suporte VIP', '2 meses grátis (anual)'],
     highlight: false,
     color: 'from-rose-500 to-pink-600',
+    isFree: false,
   },
   {
     id: 'ipe',
+    planId: 5,
     name: 'Ipê',
     icon: TreePine,
     price: 'R$ 199,97',
@@ -69,9 +81,11 @@ const plans = [
     features: ['Documentos ilimitados', '10 usuários inclusos', 'API completa', 'Webhooks', 'Geração em massa', 'Suporte premium', '2 meses grátis (anual)'],
     highlight: false,
     color: 'from-yellow-500 to-amber-600',
+    isFree: false,
   },
   {
     id: 'mogno',
+    planId: 6,
     name: 'Mogno',
     icon: Crown,
     price: 'Sob consulta',
@@ -81,18 +95,44 @@ const plans = [
     features: ['Documentos ilimitados', 'Usuários ilimitados', 'API enterprise', 'White-label', 'SLA garantido', 'Gerente de conta dedicado', 'Customizações'],
     highlight: false,
     color: 'from-[#112145] to-[#1a3266]',
+    isEnterprise: true,
+    isFree: false,
   },
 ];
 
 export default function Plans() {
   const navigate = useNavigate();
+  const { createCheckout } = useTRPCBilling();
+  const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
 
-  const handleSelectPlan = (planId: string) => {
-    if (planId === 'mogno') {
+  const handleSelectPlan = async (plan: typeof plans[0]) => {
+    // Enterprise plan - contact sales
+    if (plan.isEnterprise) {
       window.open('https://wa.me/5561999338061?text=Olá! Gostaria de saber mais sobre o plano Mogno.', '_blank');
-    } else {
-      // TODO: Integrate with checkout
-      navigate(`/checkout?plano=${planId}`);
+      return;
+    }
+
+    // Free plan - go to signup
+    if (plan.isFree) {
+      navigate('/auth?mode=signup&plan=cedro');
+      return;
+    }
+
+    // Paid plans - create Stripe checkout
+    try {
+      setLoadingPlanId(plan.id);
+      const checkoutUrl = await createCheckout(plan.planId);
+      
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+      } else {
+        toast.error('Erro ao criar sessão de checkout');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      toast.error('Erro ao processar pagamento. Tente novamente.');
+    } finally {
+      setLoadingPlanId(null);
     }
   };
 
@@ -120,6 +160,7 @@ export default function Plans() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
           {plans.map((plan) => {
             const Icon = plan.icon;
+            const isLoading = loadingPlanId === plan.id;
             return (
               <Card
                 key={plan.id}
@@ -169,9 +210,21 @@ export default function Plans() {
                         : ''
                     }`}
                     variant={plan.highlight ? 'default' : 'outline'}
-                    onClick={() => handleSelectPlan(plan.id)}
+                    onClick={() => handleSelectPlan(plan)}
+                    disabled={isLoading}
                   >
-                    {plan.id === 'cedro' ? 'Começar grátis' : plan.id === 'mogno' ? 'Falar com vendas' : 'Assinar agora'}
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Processando...
+                      </>
+                    ) : plan.isFree ? (
+                      'Começar grátis'
+                    ) : plan.isEnterprise ? (
+                      'Falar com vendas'
+                    ) : (
+                      'Assinar agora'
+                    )}
                   </Button>
                 </CardFooter>
               </Card>
