@@ -11,11 +11,9 @@ import type {
   AuthUser,
   Document,
   DocumentSigner,
-  Folder,
-  Organization,
-  OrganizationUser,
   Plan,
   Stats,
+  PlanName,
 } from '@/lib/trpc/types';
 
 interface TRPCError {
@@ -119,10 +117,11 @@ export const useTRPCDocuments = () => {
     }
   }, []);
 
+  // CORRECTED: Upload with contentType and fileBase64
   const upload = useCallback(async (file: File): Promise<string | null> => {
     try {
       setLoading(true);
-      const fileContent = await new Promise<string>((resolve) => {
+      const fileBase64 = await new Promise<string>((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () => {
           const base64 = (reader.result as string).split(',')[1];
@@ -133,7 +132,8 @@ export const useTRPCDocuments = () => {
 
       const response = await trpc.documents.upload({
         fileName: file.name,
-        fileContent,
+        contentType: file.type, // CORRECTED: Added contentType
+        fileBase64, // CORRECTED: Renamed from fileContent
       });
       return response.uploadId;
     } catch (error) {
@@ -186,10 +186,11 @@ export const useTRPCDocuments = () => {
     }
   }, [handleError]);
 
-  const getById = useCallback(async (id: number): Promise<Document | null> => {
+  // CORRECTED: get with documentId as string (was getById with number)
+  const get = useCallback(async (documentId: string): Promise<Document | null> => {
     try {
       setLoading(true);
-      const document = await trpc.documents.getById(id);
+      const document = await trpc.documents.get(documentId);
       return document;
     } catch (error) {
       handleError(error as TRPCError, 'Erro ao buscar documento');
@@ -199,9 +200,10 @@ export const useTRPCDocuments = () => {
     }
   }, [handleError]);
 
-  const generateActionUrl = useCallback(async (documentId: number, flowActionId: string): Promise<string | null> => {
+  // CORRECTED: createActionUrl (was generateActionUrl)
+  const createActionUrl = useCallback(async (documentId: string, flowActionId: string): Promise<string | null> => {
     try {
-      const response = await trpc.documents.generateActionUrl({ documentId, flowActionId });
+      const response = await trpc.documents.createActionUrl({ documentId, flowActionId });
       return response.url;
     } catch (error) {
       handleError(error as TRPCError, 'Erro ao gerar URL de assinatura');
@@ -209,7 +211,8 @@ export const useTRPCDocuments = () => {
     }
   }, [handleError]);
 
-  const sendReminder = useCallback(async (documentId: number, flowActionId: string): Promise<boolean> => {
+  // CORRECTED: documentId is now string
+  const sendReminder = useCallback(async (documentId: string, flowActionId: string): Promise<boolean> => {
     try {
       await trpc.documents.sendReminder({ documentId, flowActionId });
       toast({
@@ -223,9 +226,10 @@ export const useTRPCDocuments = () => {
     }
   }, [handleError]);
 
-  const download = useCallback(async (id: number): Promise<void> => {
+  // CORRECTED: documentId is now string
+  const download = useCallback(async (documentId: string): Promise<void> => {
     try {
-      const response = await trpc.documents.download(id);
+      const response = await trpc.documents.download(documentId);
       window.open(response.downloadUrl, '_blank');
       toast({
         title: 'Download iniciado',
@@ -236,99 +240,20 @@ export const useTRPCDocuments = () => {
     }
   }, [handleError]);
 
-  return { loading, upload, create, list, getById, generateActionUrl, sendReminder, download };
+  return { loading, upload, create, list, get, createActionUrl, sendReminder, download };
 };
 
+// REMOVED: useTRPCFolders - Not available in backend
+// Stub for backward compatibility
 export const useTRPCFolders = () => {
-  const [loading, setLoading] = useState(false);
-
-  const handleError = useCallback((error: TRPCError, defaultMessage: string) => {
-    console.error(defaultMessage, error);
-    toast({
-      title: 'Erro',
-      description: error.data?.message || error.message || defaultMessage,
-      variant: 'destructive',
-    });
-  }, []);
-
-  const create = useCallback(async (name: string, parentId?: number, color?: string, icon?: string): Promise<Folder | null> => {
-    try {
-      setLoading(true);
-      const folder = await trpc.folders.create({ name, parentId, color, icon });
-      toast({
-        title: 'Pasta criada',
-        description: 'Pasta criada com sucesso!',
-      });
-      return folder;
-    } catch (error) {
-      handleError(error as TRPCError, 'Erro ao criar pasta');
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, [handleError]);
-
-  const list = useCallback(async (parentId?: number | null, includeDocumentCount?: boolean): Promise<Folder[]> => {
-    try {
-      setLoading(true);
-      const folders = await trpc.folders.list({ parentId, includeDocumentCount });
-      return folders;
-    } catch (error) {
-      handleError(error as TRPCError, 'Erro ao listar pastas');
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  }, [handleError]);
-
-  const tree = useCallback(async (): Promise<Folder[]> => {
-    try {
-      setLoading(true);
-      const folders = await trpc.folders.tree();
-      return folders;
-    } catch (error) {
-      handleError(error as TRPCError, 'Erro ao buscar árvore de pastas');
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  }, [handleError]);
-
-  const update = useCallback(async (id: number, data: { name?: string; parentId?: number | null; color?: string; icon?: string }): Promise<Folder | null> => {
-    try {
-      setLoading(true);
-      const folder = await trpc.folders.update({ id, ...data });
-      toast({
-        title: 'Pasta atualizada',
-        description: 'Pasta atualizada com sucesso!',
-      });
-      return folder;
-    } catch (error) {
-      handleError(error as TRPCError, 'Erro ao atualizar pasta');
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, [handleError]);
-
-  const remove = useCallback(async (id: number, force?: boolean): Promise<boolean> => {
-    try {
-      setLoading(true);
-      await trpc.folders.delete({ id, force });
-      toast({
-        title: 'Pasta excluída',
-        description: 'Pasta excluída com sucesso!',
-      });
-      return true;
-    } catch (error) {
-      handleError(error as TRPCError, 'Erro ao excluir pasta');
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, [handleError]);
-
-  return { loading, create, list, tree, update, remove };
+  return {
+    loading: false,
+    create: async () => null,
+    list: async () => [],
+    tree: async () => [],
+    update: async () => null,
+    remove: async () => false,
+  };
 };
 
 export const useTRPCStats = () => {
@@ -401,11 +326,12 @@ export const useTRPCBilling = () => {
     });
   }, []);
 
-  const createCheckout = useCallback(async (planId: number): Promise<string | null> => {
+  // CORRECTED: createCheckoutSession with planName and billingInterval
+  const createCheckoutSession = useCallback(async (planName: PlanName, billingInterval: 'monthly' | 'yearly' = 'monthly'): Promise<string | null> => {
     try {
       setLoading(true);
-      const response = await trpc.billing.createCheckout({ planId });
-      return response.checkoutUrl;
+      const response = await trpc.billing.createCheckoutSession({ planName, billingInterval });
+      return response.url;
     } catch (error) {
       handleError(error as TRPCError, 'Erro ao criar checkout');
       return null;
@@ -414,11 +340,12 @@ export const useTRPCBilling = () => {
     }
   }, [handleError]);
 
-  const getCustomerPortal = useCallback(async (): Promise<string | null> => {
+  // CORRECTED: createPortalSession (was getCustomerPortal)
+  const createPortalSession = useCallback(async (): Promise<string | null> => {
     try {
       setLoading(true);
-      const response = await trpc.billing.getCustomerPortal();
-      return response.portalUrl;
+      const response = await trpc.billing.createPortalSession();
+      return response.url;
     } catch (error) {
       handleError(error as TRPCError, 'Erro ao acessar portal');
       return null;
@@ -427,5 +354,5 @@ export const useTRPCBilling = () => {
     }
   }, [handleError]);
 
-  return { loading, createCheckout, getCustomerPortal };
+  return { loading, createCheckoutSession, createPortalSession };
 };

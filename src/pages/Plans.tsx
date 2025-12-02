@@ -7,11 +7,12 @@ import { ArrowLeft, Check, Crown, Leaf, TreeDeciduous, Trees, Flower2, TreePine,
 import { useNavigate } from 'react-router-dom';
 import { useTRPCBilling } from '@/hooks/useTRPC';
 import { toast } from 'sonner';
+import type { PlanName } from '@/lib/trpc/types';
 
 const plans = [
   {
     id: 'cedro',
-    planId: 1,
+    planName: 'CEDRO' as PlanName,
     name: 'Cedro',
     icon: Leaf,
     price: 'R$ 0,00',
@@ -25,7 +26,7 @@ const plans = [
   },
   {
     id: 'jacaranda',
-    planId: 2,
+    planName: 'JACARANDA' as PlanName,
     name: 'Jacarandá',
     icon: TreeDeciduous,
     price: 'R$ 39,90',
@@ -40,7 +41,7 @@ const plans = [
   },
   {
     id: 'angico',
-    planId: 3,
+    planName: 'ANGICO' as PlanName,
     name: 'Angico',
     icon: Trees,
     price: 'R$ 99,97',
@@ -55,7 +56,7 @@ const plans = [
   },
   {
     id: 'aroeira',
-    planId: 4,
+    planName: 'AROEIRA' as PlanName,
     name: 'Aroeira',
     icon: Flower2,
     price: 'R$ 149,97',
@@ -70,7 +71,7 @@ const plans = [
   },
   {
     id: 'ipe',
-    planId: 5,
+    planName: 'IPE' as PlanName,
     name: 'Ipê',
     icon: TreePine,
     price: 'R$ 199,97',
@@ -85,7 +86,7 @@ const plans = [
   },
   {
     id: 'mogno',
-    planId: 6,
+    planName: 'MOGNO' as PlanName,
     name: 'Mogno',
     icon: Crown,
     price: 'Sob consulta',
@@ -102,7 +103,8 @@ const plans = [
 
 export default function Plans() {
   const navigate = useNavigate();
-  const { createCheckout } = useTRPCBilling();
+  // CORRECTED: Using createCheckoutSession instead of createCheckout
+  const { createCheckoutSession } = useTRPCBilling();
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
 
   const handleSelectPlan = async (plan: typeof plans[0]) => {
@@ -121,7 +123,8 @@ export default function Plans() {
     // Paid plans - create Stripe checkout
     try {
       setLoadingPlanId(plan.id);
-      const checkoutUrl = await createCheckout(plan.planId);
+      // CORRECTED: Using planName instead of planId
+      const checkoutUrl = await createCheckoutSession(plan.planName, 'monthly');
       
       if (checkoutUrl) {
         window.location.href = checkoutUrl;

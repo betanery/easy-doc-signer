@@ -47,9 +47,11 @@ export interface DocumentSigner {
   signatureType?: SignatureType;
 }
 
+// CORRECTED: Upload input with contentType and fileBase64
 export interface UploadInput {
   fileName: string;
-  fileContent: string; // base64
+  contentType: string; // MIME type (ex: "application/pdf")
+  fileBase64: string;  // File encoded in base64
 }
 
 export interface UploadResponse {
@@ -79,7 +81,7 @@ export interface DocumentFlowAction {
 }
 
 export interface Document {
-  id: number;
+  id: string; // CORRECTED: Lacuna document ID is string
   name: string;
   status: DocumentStatus;
   createdAt: string;
@@ -89,17 +91,21 @@ export interface Document {
   folderId?: number;
 }
 
-export interface GenerateActionUrlInput {
-  documentId: number;
+// CORRECTED: CreateActionUrl input
+export interface CreateActionUrlInput {
+  documentId: string;
   flowActionId: string;
+  identifierCpfCnpj?: string;
+  email?: string;
+  returnUrl?: string;
 }
 
 export interface SendReminderInput {
-  documentId: number;
+  documentId: string; // CORRECTED: string, not number
   flowActionId: string;
 }
 
-// Folder types
+// Folder types (NOT AVAILABLE IN BACKEND - kept for type compatibility)
 export interface CreateFolderInput {
   name: string;
   parentId?: number;
@@ -135,7 +141,7 @@ export interface Folder {
   children?: Folder[];
 }
 
-// Organization types
+// Organization types (NOT AVAILABLE IN BACKEND - kept for type compatibility)
 export interface CreateOrganizationInput {
   name: string;
   lacunaOrganizationId?: string;
@@ -175,10 +181,12 @@ export interface OrganizationUser {
 }
 
 // Plans and Stats types
+export type PlanName = 'CEDRO' | 'JACARANDA' | 'ANGICO' | 'AROEIRA' | 'IPE' | 'MOGNO';
+
 export interface Plan {
   id: number;
   name: string;
-  price: number;
+  priceBRL: number; // CORRECTED: priceBRL not price
   documentsLimit: number | null;
   usersLimit: number | null;
   features: string[];
@@ -208,15 +216,26 @@ export interface LacunaStatus {
   organizationId?: string;
 }
 
-// Billing types
+// Billing types - CORRECTED
+export interface CreateCheckoutSessionInput {
+  planName: PlanName;
+  billingInterval: 'monthly' | 'yearly';
+}
+
+export interface CheckoutResponse {
+  url: string;
+}
+
+export interface CustomerPortalResponse {
+  url: string;
+}
+
+// Legacy types for backward compatibility
 export interface CreateCheckoutInput {
   planId: number;
 }
 
-export interface CheckoutResponse {
-  checkoutUrl: string;
-}
-
-export interface CustomerPortalResponse {
-  portalUrl: string;
+export interface GenerateActionUrlInput {
+  documentId: number;
+  flowActionId: string;
 }
