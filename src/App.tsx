@@ -8,7 +8,9 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import DocumentsList from "./pages/DocumentsList";
 import DocumentUpload from "./pages/DocumentUpload";
+import DocumentCreate from "./pages/DocumentCreate";
 import DocumentDetail from "./pages/DocumentDetail";
+import SignDocument from "./pages/SignDocument";
 import TenantManagement from "./pages/TenantManagement";
 import Plans from "./pages/Plans";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
@@ -30,7 +32,9 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/documents" element={<DocumentsList />} />
           <Route path="/documents/upload" element={<DocumentUpload />} />
+          <Route path="/documents/create" element={<DocumentCreate />} />
           <Route path="/documents/:id" element={<DocumentDetail />} />
+          <Route path="/sign/:documentId/:flowActionId" element={<SignDocument />} />
           <Route path="/tenants" element={<TenantManagement />} />
           <Route path="/planos" element={<Plans />} />
           <Route path="/folders" element={<Folders />} />

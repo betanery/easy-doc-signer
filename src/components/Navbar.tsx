@@ -1,4 +1,4 @@
-import { Bell, Search, User } from "lucide-react";
+import { Bell, Search, User, LogOut } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import {
@@ -26,36 +26,39 @@ export function Navbar({ userName, userEmail }: NavbarProps) {
   };
 
   return (
-    <header className="h-16 border-b bg-card/80 backdrop-blur-lg flex items-center justify-between px-6">
-      <div className="flex items-center gap-4 flex-1">
-        <div className="relative max-w-md w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar documentos..."
-            className="pl-10 bg-muted/50"
-          />
-        </div>
+    <header className="flex items-center justify-between mb-6 pb-4 border-b">
+      <div>
+        <h2 className="text-lg font-semibold text-foreground">
+          Plataforma de Assinatura MDSign
+        </h2>
+        <p className="text-xs text-muted-foreground">
+          Assine documentos em segundos, com segurança e validade jurídica.
+        </p>
       </div>
 
       <div className="flex items-center gap-4">
+        <div className="relative hidden md:block">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar..."
+            className="pl-10 w-64 bg-muted/50"
+          />
+        </div>
+
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="w-5 h-5" />
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground text-[10px] rounded-full flex items-center justify-center">
             3
           </span>
         </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="w-4 h-4 text-primary" />
-              </div>
-              {userName && (
-                <span className="hidden md:inline text-sm font-medium">
-                  {userName}
-                </span>
-              )}
+            <Button variant="outline" size="sm" className="gap-2">
+              <User className="w-4 h-4" />
+              <span className="hidden md:inline text-sm">
+                {userName || "Conta MDTech"}
+              </span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
@@ -74,10 +77,11 @@ export function Navbar({ userName, userEmail }: NavbarProps) {
               Configurações
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate("/billing")}>
-              Assinatura
+              Planos e Cobrança
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+              <LogOut className="w-4 h-4 mr-2" />
               Sair
             </DropdownMenuItem>
           </DropdownMenuContent>
