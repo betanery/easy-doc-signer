@@ -19,6 +19,11 @@ export function ManageSubscriptionButton({ variant = 'outline', className }: Man
       
       if (error) throw error;
       
+      if (data?.error === 'no_customer') {
+        toast.info(data.message || 'Você precisa assinar um plano primeiro.');
+        return;
+      }
+      
       if (data?.url) {
         window.open(data.url, '_blank');
       } else {
