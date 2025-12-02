@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Logo } from "@/components/Logo";
 import { useState, useEffect } from "react";
 import { z } from "zod";
-import { useTRPCAuth, useTRPCStats } from "@/hooks/useTRPC";
+import { trpc, setAuthToken } from "@/lib/trpc/react";
+import { toast } from "sonner";
 
 // Validation schemas
 const loginSchema = z.object({
@@ -24,14 +25,11 @@ const signupSchema = z.object({
     .regex(/[A-Z]/, "Senha deve ter pelo menos uma letra maiúscula")
     .regex(/[0-9]/, "Senha deve ter pelo menos um número"),
   tenantName: z.string().min(2, "Nome da empresa deve ter pelo menos 2 caracteres"),
-  cnpj: z.string().optional(),
   planId: z.number().min(1, "Selecione um plano"),
 });
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { loading, user, login, signup, fetchUser } = useTRPCAuth();
-  const { getPlans } = useTRPCStats();
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,40 +40,24 @@ const Auth = () => {
   const [cnpj, setCnpj] = useState("");
   const [planId, setPlanId] = useState<number>(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [plans, setPlans] = useState<Array<{ id: number; name: string; price: number }>>([]);
 
-  // Check if already authenticated
-  useEffect(() => {
-    const checkSession = async () => {
-      const userData = await fetchUser();
-      if (userData) {
-        navigate("/dashboard");
-      }
-    };
-    checkSession();
-  }, [fetchUser, navigate]);
+  // tRPC mutations
+  const loginMutation = trpc.auth.login.useMutation();
+  const signupMutation = trpc.auth.signup.useMutation();
+  const plansQuery = trpc.plans.useQuery(undefined, {
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
 
-  // Load plans
-  useEffect(() => {
-    const loadPlans = async () => {
-      const plansData = await getPlans();
-      if (plansData.length > 0) {
-        setPlans(plansData);
-        setPlanId(plansData[0].id);
-      } else {
-        // Fallback plans if API fails
-        setPlans([
-          { id: 1, name: "Cedro (Grátis)", price: 0 },
-          { id: 2, name: "Jacarandá", price: 39.90 },
-          { id: 3, name: "Angico", price: 99.97 },
-          { id: 4, name: "Aroeira", price: 149.97 },
-          { id: 5, name: "Ipê", price: 199.97 },
-          { id: 6, name: "Mogno", price: 0 },
-        ]);
-      }
-    };
-    loadPlans();
-  }, [getPlans]);
+  // Fallback plans
+  const plans = (plansQuery.data as any[]) || [
+    { id: 1, name: "Cedro (Grátis)", price: 0 },
+    { id: 2, name: "Jacarandá", price: 39.90 },
+    { id: 3, name: "Angico", price: 99.97 },
+    { id: 4, name: "Aroeira", price: 149.97 },
+    { id: 5, name: "Ipê", price: 199.97 },
+    { id: 6, name: "Mogno", price: 0 },
+  ];
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,10 +75,19 @@ const Auth = () => {
       return;
     }
 
-    const success = await login({ email: email.trim(), password });
-    if (success) {
-      navigate("/dashboard");
-    }
+    (loginMutation.mutate as any)(
+      { email: email.trim(), password },
+      {
+        onSuccess: (res: any) => {
+          setAuthToken(res.token);
+          toast.success("Login realizado com sucesso!");
+          navigate("/dashboard");
+        },
+        onError: (error: any) => {
+          toast.error(error.message || "Erro ao fazer login");
+        },
+      }
+    );
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -108,7 +99,6 @@ const Auth = () => {
       email: signupEmail,
       password: signupPassword,
       tenantName,
-      cnpj: cnpj || undefined,
       planId,
     });
     
@@ -123,19 +113,29 @@ const Auth = () => {
       return;
     }
 
-    const success = await signup({
-      email: signupEmail.trim(),
-      password: signupPassword,
-      name: signupName.trim(),
-      tenantName: tenantName.trim(),
-      cnpj: cnpj.trim() || undefined,
-      planId,
-    });
-
-    if (success) {
-      navigate("/dashboard");
-    }
+    (signupMutation.mutate as any)(
+      {
+        email: signupEmail.trim(),
+        password: signupPassword,
+        name: signupName.trim(),
+        tenantName: tenantName.trim(),
+        cnpj: cnpj.trim() || undefined,
+        planId,
+      },
+      {
+        onSuccess: (res: any) => {
+          setAuthToken(res.token);
+          toast.success("Conta criada com sucesso!");
+          navigate("/dashboard");
+        },
+        onError: (error: any) => {
+          toast.error(error.message || "Erro ao criar conta");
+        },
+      }
+    );
   };
+
+  const loading = loginMutation.isPending || signupMutation.isPending;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
@@ -289,7 +289,7 @@ const Auth = () => {
                         <SelectValue placeholder="Selecione um plano" />
                       </SelectTrigger>
                       <SelectContent>
-                        {plans.map((plan) => (
+                        {plans.map((plan: any) => (
                           <SelectItem key={plan.id} value={String(plan.id)}>
                             {plan.name} {plan.price > 0 ? `- R$ ${plan.price.toFixed(2)}/mês` : ''}
                           </SelectItem>
