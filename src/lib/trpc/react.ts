@@ -1,5 +1,5 @@
 import { createTRPCReact } from "@trpc/react-query";
-import { httpBatchLink } from "@trpc/client";
+import { httpLink } from "@trpc/client";
 
 // Workaround for tRPC v11 strict type checking without backend types
 // We cast to 'any' to bypass the router type validation
@@ -11,7 +11,7 @@ const TRPC_URL = import.meta.env.VITE_API_URL || "https://mdsignapi-2n7ddbk9.man
 
 export const trpcClient = (trpc as any).createClient({
   links: [
-    httpBatchLink({
+    httpLink({
       url: TRPC_URL,
       headers() {
         if (typeof window === "undefined") return {};
