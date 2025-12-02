@@ -6,7 +6,8 @@ import { httpBatchLink } from "@trpc/client";
 const createUntypedTRPC = createTRPCReact as any;
 export const trpc = createUntypedTRPC();
 
-const TRPC_URL = "https://3000-iwk771ozs8dstssh7icgq-bccb9cec.manusvm.computer/api/trpc";
+// URL do backend - usa variável de ambiente ou fallback para produção
+const TRPC_URL = import.meta.env.VITE_API_URL || "https://mdsignapi-2n7ddbk9.manus.space/api/trpc";
 
 export const trpcClient = (trpc as any).createClient({
   links: [
@@ -15,7 +16,7 @@ export const trpcClient = (trpc as any).createClient({
       headers() {
         if (typeof window === "undefined") return {};
         const token = localStorage.getItem("auth_token");
-        return token ? { Authorization: `Bearer ${token}` } : {};
+        return token ? { authorization: `Bearer ${token}` } : {};
       },
     }),
   ],
