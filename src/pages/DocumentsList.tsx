@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useMDSignAPI } from '@/hooks/useMDSignAPI';
+import { useTRPCDocuments, useTRPCAuth, useTRPCFolders } from '@/hooks/useTRPC';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,83 +29,82 @@ import {
   Eye,
   Download,
   ArrowLeft,
-  Upload
+  Upload,
+  Bell
 } from 'lucide-react';
-import type { User } from '@supabase/supabase-js';
-
-interface DocumentItem {
-  id: string;
-  name?: string;
-  status: string;
-  createdAt?: string;
-  participants?: Array<{ name: string; email: string }>;
-}
+import type { Document, DocumentStatus } from '@/lib/trpc/types';
 
 export default function DocumentsList() {
   const navigate = useNavigate();
-  const { listDocuments, downloadDocument, loading } = useMDSignAPI();
-  const [documents, setDocuments] = useState<DocumentItem[]>([]);
-  const [filteredDocuments, setFilteredDocuments] = useState<DocumentItem[]>([]);
+  const { list, download, loading } = useTRPCDocuments();
+  const { fetchUser } = useTRPCAuth();
+  const { list: listFolders } = useTRPCFolders();
+  
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [user, setUser] = useState<User | null>(null);
+  const [folderFilter, setFolderFilter] = useState<string>('all');
+  const [folders, setFolders] = useState<Array<{ id: number; name: string }>>([]);
 
   const loadDocuments = useCallback(async () => {
-    const docs = await listDocuments();
-    setDocuments(docs as DocumentItem[]);
-  }, [listDocuments]);
+    const status = statusFilter !== 'all' ? statusFilter : undefined;
+    const folderId = folderFilter !== 'all' ? Number(folderFilter) : undefined;
+    const docs = await list(status, folderId);
+    setDocuments(docs);
+  }, [list, statusFilter, folderFilter]);
 
   const filterDocuments = useCallback(() => {
     let filtered = [...documents];
 
-    // Filtro de busca
     if (searchQuery) {
       filtered = filtered.filter(doc => 
         doc.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        doc.id?.toLowerCase().includes(searchQuery.toLowerCase())
+        String(doc.id).includes(searchQuery)
       );
     }
 
-    // Filtro de status
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(doc => doc.status === statusFilter);
-    }
-
     setFilteredDocuments(filtered);
-  }, [documents, searchQuery, statusFilter]);
+  }, [documents, searchQuery]);
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      const user = await fetchUser();
+      if (!user) {
         navigate('/auth');
         return;
       }
-      setUser(session.user);
     };
     checkAuth();
-  }, [navigate]);
+  }, [fetchUser, navigate]);
 
   useEffect(() => {
-    if (user) {
-      loadDocuments();
-    }
-  }, [user, loadDocuments]);
+    loadDocuments();
+  }, [loadDocuments]);
+
+  useEffect(() => {
+    const loadFolders = async () => {
+      const foldersData = await listFolders();
+      setFolders(foldersData);
+    };
+    loadFolders();
+  }, [listFolders]);
 
   useEffect(() => {
     filterDocuments();
   }, [filterDocuments]);
 
-  const handleDownload = async (documentId: string) => {
-    await downloadDocument(documentId);
+  const handleDownload = async (documentId: number) => {
+    await download(documentId);
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { label: string; className: string }> = {
-      'Pending': { label: 'Pendente', className: 'bg-status-warning text-white' },
-      'InProgress': { label: 'Em Andamento', className: 'bg-status-info text-white' },
-      'Completed': { label: 'Concluído', className: 'bg-status-success text-white' },
-      'Cancelled': { label: 'Cancelado', className: 'bg-status-error text-white' },
+  const getStatusBadge = (status: DocumentStatus) => {
+    const statusConfig: Record<DocumentStatus, { label: string; className: string }> = {
+      'PENDING': { label: 'Pendente', className: 'bg-status-warning text-white' },
+      'IN_PROGRESS': { label: 'Em Andamento', className: 'bg-status-info text-white' },
+      'COMPLETED': { label: 'Concluído', className: 'bg-status-success text-white' },
+      'CANCELLED': { label: 'Cancelado', className: 'bg-status-error text-white' },
+      'EXPIRED': { label: 'Expirado', className: 'bg-muted text-muted-foreground' },
     };
 
     const config = statusConfig[status] || { label: status, className: 'bg-muted text-muted-foreground' };
@@ -164,17 +162,31 @@ export default function DocumentsList() {
                   className="pl-10"
                 />
               </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); }}>
                 <SelectTrigger className="w-full md:w-[200px]">
                   <Filter className="w-4 h-4 mr-2" />
                   <SelectValue placeholder="Filtrar por status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="Pending">Pendente</SelectItem>
-                  <SelectItem value="InProgress">Em Andamento</SelectItem>
-                  <SelectItem value="Completed">Concluído</SelectItem>
-                  <SelectItem value="Cancelled">Cancelado</SelectItem>
+                  <SelectItem value="PENDING">Pendente</SelectItem>
+                  <SelectItem value="IN_PROGRESS">Em Andamento</SelectItem>
+                  <SelectItem value="COMPLETED">Concluído</SelectItem>
+                  <SelectItem value="CANCELLED">Cancelado</SelectItem>
+                  <SelectItem value="EXPIRED">Expirado</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={folderFilter} onValueChange={(v) => { setFolderFilter(v); }}>
+                <SelectTrigger className="w-full md:w-[200px]">
+                  <SelectValue placeholder="Filtrar por pasta" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as Pastas</SelectItem>
+                  {folders.map((folder) => (
+                    <SelectItem key={folder.id} value={String(folder.id)}>
+                      {folder.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -219,12 +231,12 @@ export default function DocumentsList() {
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
                             <FileText className="w-4 h-4 text-muted-foreground" />
-                            {doc.name || doc.id}
+                            {doc.name || `Documento #${doc.id}`}
                           </div>
                         </TableCell>
                         <TableCell>{getStatusBadge(doc.status)}</TableCell>
                         <TableCell>
-                          {doc.participants?.length || 0} signatário(s)
+                          {doc.flowActions?.length || 0} signatário(s)
                         </TableCell>
                         <TableCell>{formatDate(doc.createdAt)}</TableCell>
                         <TableCell className="text-right">

@@ -1,14 +1,14 @@
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Logo } from "@/components/Logo";
 import { useState, useEffect } from "react";
 import { z } from "zod";
+import { useTRPCAuth, useTRPCStats } from "@/hooks/useTRPC";
 
 // Validation schemas
 const loginSchema = z.object({
@@ -23,34 +23,64 @@ const signupSchema = z.object({
     .min(8, "Senha deve ter pelo menos 8 caracteres")
     .regex(/[A-Z]/, "Senha deve ter pelo menos uma letra maiúscula")
     .regex(/[0-9]/, "Senha deve ter pelo menos um número"),
+  tenantName: z.string().min(2, "Nome da empresa deve ter pelo menos 2 caracteres"),
+  cnpj: z.string().optional(),
+  planId: z.number().min(1, "Selecione um plano"),
 });
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
+  const { loading, user, login, signup, fetchUser } = useTRPCAuth();
+  const { getPlans } = useTRPCStats();
+  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [signupName, setSignupName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
+  const [tenantName, setTenantName] = useState("");
+  const [cnpj, setCnpj] = useState("");
+  const [planId, setPlanId] = useState<number>(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [plans, setPlans] = useState<Array<{ id: number; name: string; price: number }>>([]);
 
   // Check if already authenticated
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+      const userData = await fetchUser();
+      if (userData) {
         navigate("/dashboard");
       }
     };
     checkSession();
-  }, [navigate]);
+  }, [fetchUser, navigate]);
+
+  // Load plans
+  useEffect(() => {
+    const loadPlans = async () => {
+      const plansData = await getPlans();
+      if (plansData.length > 0) {
+        setPlans(plansData);
+        setPlanId(plansData[0].id);
+      } else {
+        // Fallback plans if API fails
+        setPlans([
+          { id: 1, name: "Cedro (Grátis)", price: 0 },
+          { id: 2, name: "Jacarandá", price: 39.90 },
+          { id: 3, name: "Angico", price: 99.97 },
+          { id: 4, name: "Aroeira", price: 149.97 },
+          { id: 5, name: "Ipê", price: 199.97 },
+          { id: 6, name: "Mogno", price: 0 },
+        ]);
+      }
+    };
+    loadPlans();
+  }, [getPlans]);
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
-    // Validate input
     const validation = loginSchema.safeParse({ email, password });
     if (!validation.success) {
       const fieldErrors: Record<string, string> = {};
@@ -63,40 +93,9 @@ const Auth = () => {
       return;
     }
 
-    setLoading(true);
-
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-
-      if (error) {
-        if (error.message.includes("Invalid login credentials")) {
-          toast({
-            title: "Credenciais inválidas",
-            description: "Email ou senha incorretos",
-            variant: "destructive",
-          });
-        } else {
-          throw error;
-        }
-      } else if (data.user) {
-        toast({
-          title: "Login realizado",
-          description: "Redirecionando...",
-        });
-        navigate("/dashboard");
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
-      toast({
-        title: "Erro ao fazer login",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+    const success = await login({ email: email.trim(), password });
+    if (success) {
+      navigate("/dashboard");
     }
   };
 
@@ -104,11 +103,13 @@ const Auth = () => {
     e.preventDefault();
     setErrors({});
 
-    // Validate input
     const validation = signupSchema.safeParse({
       name: signupName,
       email: signupEmail,
       password: signupPassword,
+      tenantName,
+      cnpj: cnpj || undefined,
+      planId,
     });
     
     if (!validation.success) {
@@ -122,50 +123,17 @@ const Auth = () => {
       return;
     }
 
-    setLoading(true);
+    const success = await signup({
+      email: signupEmail.trim(),
+      password: signupPassword,
+      name: signupName.trim(),
+      tenantName: tenantName.trim(),
+      cnpj: cnpj.trim() || undefined,
+      planId,
+    });
 
-    try {
-      const redirectUrl = `${window.location.origin}/dashboard`;
-
-      const { data, error } = await supabase.auth.signUp({
-        email: signupEmail.trim(),
-        password: signupPassword,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            full_name: signupName.trim(),
-          },
-        },
-      });
-
-      if (error) {
-        if (error.message.includes("User already registered")) {
-          toast({
-            title: "Usuário já existe",
-            description: "Este email já está cadastrado. Tente fazer login.",
-            variant: "destructive",
-          });
-          return;
-        }
-        throw error;
-      }
-
-      if (data.user) {
-        toast({
-          title: "Conta criada com sucesso!",
-          description: "Redirecionando...",
-        });
-        navigate("/dashboard");
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
-      toast({
-        title: "Erro ao criar conta",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+    if (success) {
+      navigate("/dashboard");
     }
   };
 
@@ -287,6 +255,48 @@ const Auth = () => {
                     />
                     {errors.signup_password && <p className="text-sm text-destructive">{errors.signup_password}</p>}
                     <p className="text-xs text-muted-foreground">Mínimo 8 caracteres, 1 maiúscula e 1 número</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-tenant">Nome da Empresa</Label>
+                    <Input
+                      id="signup-tenant"
+                      type="text"
+                      placeholder="Minha Empresa LTDA"
+                      value={tenantName}
+                      onChange={(e) => setTenantName(e.target.value)}
+                      className={errors.signup_tenantName ? "border-destructive" : ""}
+                      required
+                    />
+                    {errors.signup_tenantName && <p className="text-sm text-destructive">{errors.signup_tenantName}</p>}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-cnpj">CNPJ (Opcional)</Label>
+                    <Input
+                      id="signup-cnpj"
+                      type="text"
+                      placeholder="00.000.000/0001-00"
+                      value={cnpj}
+                      onChange={(e) => setCnpj(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-plan">Plano</Label>
+                    <Select value={String(planId)} onValueChange={(v) => setPlanId(Number(v))}>
+                      <SelectTrigger className={errors.signup_planId ? "border-destructive" : ""}>
+                        <SelectValue placeholder="Selecione um plano" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {plans.map((plan) => (
+                          <SelectItem key={plan.id} value={String(plan.id)}>
+                            {plan.name} {plan.price > 0 ? `- R$ ${plan.price.toFixed(2)}/mês` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.signup_planId && <p className="text-sm text-destructive">{errors.signup_planId}</p>}
                   </div>
                 </CardContent>
 

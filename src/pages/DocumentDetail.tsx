@@ -1,96 +1,88 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { useMDSignAPI } from "@/hooks/useMDSignAPI";
-import { Leaf, ArrowLeft, Download, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { useTRPCDocuments, useTRPCAuth } from "@/hooks/useTRPC";
+import { ArrowLeft, Download, Clock, CheckCircle2, XCircle, Send, ExternalLink } from "lucide-react";
 import { Logo } from "@/components/Logo";
-
-interface DocumentData {
-  id: string;
-  name: string;
-  status: string;
-  created_at?: string;
-  file_url?: string;
-  signers?: Array<{
-    name: string;
-    email: string;
-    status: string;
-    signed_at?: string;
-  }>;
-  actions?: Array<{
-    action: string;
-    date: string;
-    user: string;
-  }>;
-}
+import type { Document, DocumentStatus } from "@/lib/trpc/types";
 
 const DocumentDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { getDocument, downloadDocument, loading } = useMDSignAPI();
-  const [document, setDocument] = useState<DocumentData | null>(null);
+  const { getById, download, generateActionUrl, sendReminder, loading } = useTRPCDocuments();
+  const { fetchUser } = useTRPCAuth();
+  const [document, setDocument] = useState<Document | null>(null);
 
-  useEffect(() => {
-    if (id) {
-      fetchDocument();
-    }
-  }, [id]);
-
-  const fetchDocument = async () => {
+  const fetchDocument = useCallback(async () => {
     if (!id) return;
 
-    try {
-      const data = await getDocument(id);
-      if (data) {
-        setDocument(data);
-      } else {
-        toast({
-          title: "Documento não encontrado",
-          description: "O documento solicitado não existe",
-          variant: "destructive",
-        });
-        navigate("/documents");
-      }
-    } catch (error: any) {
+    const user = await fetchUser();
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+
+    const data = await getById(Number(id));
+    if (data) {
+      setDocument(data);
+    } else {
       toast({
-        title: "Erro ao carregar documento",
-        description: error.message,
+        title: "Documento não encontrado",
+        description: "O documento solicitado não existe",
         variant: "destructive",
       });
+      navigate("/documents");
     }
-  };
+  }, [id, getById, fetchUser, navigate, toast]);
+
+  useEffect(() => {
+    fetchDocument();
+  }, [fetchDocument]);
 
   const handleDownload = async () => {
     if (!id) return;
-    await downloadDocument(id);
+    await download(Number(id));
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; variant: any }> = {
-      draft: { label: "Rascunho", variant: "secondary" },
-      pending: { label: "Pendente", variant: "default" },
-      signed: { label: "Assinado", variant: "default" },
-      completed: { label: "Concluído", variant: "default" },
-      cancelled: { label: "Cancelado", variant: "destructive" },
+  const handleGenerateUrl = async (flowActionId: string) => {
+    if (!id) return;
+    const url = await generateActionUrl(Number(id), flowActionId);
+    if (url) {
+      window.open(url, '_blank');
+    }
+  };
+
+  const handleSendReminder = async (flowActionId: string) => {
+    if (!id) return;
+    await sendReminder(Number(id), flowActionId);
+  };
+
+  const getStatusBadge = (status: DocumentStatus) => {
+    const statusMap: Record<DocumentStatus, { label: string; className: string }> = {
+      PENDING: { label: "Pendente", className: "bg-status-warning text-white" },
+      IN_PROGRESS: { label: "Em Andamento", className: "bg-status-info text-white" },
+      COMPLETED: { label: "Concluído", className: "bg-status-success text-white" },
+      CANCELLED: { label: "Cancelado", className: "bg-status-error text-white" },
+      EXPIRED: { label: "Expirado", className: "bg-muted text-muted-foreground" },
     };
 
-    const config = statusMap[status] || { label: status, variant: "secondary" };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    const config = statusMap[status] || { label: status, className: "bg-muted text-muted-foreground" };
+    return <Badge className={config.className}>{config.label}</Badge>;
   };
 
   const getSignerStatusIcon = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case "signed":
+      case "completed":
         return <CheckCircle2 className="h-5 w-5 text-status-success" />;
       case "pending":
         return <Clock className="h-5 w-5 text-status-warning" />;
       case "refused":
+      case "cancelled":
         return <XCircle className="h-5 w-5 text-status-error" />;
       default:
         return <Clock className="h-5 w-5 text-muted-foreground" />;
@@ -119,7 +111,7 @@ const DocumentDetail = () => {
 
       <main className="container py-8">
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Main Content - Document Viewer */}
+          {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
@@ -127,69 +119,82 @@ const DocumentDetail = () => {
                   <div>
                     <CardTitle className="text-2xl mb-2">{document.name}</CardTitle>
                     <CardDescription>
-                      {document.created_at && `Criado em ${new Date(document.created_at).toLocaleDateString("pt-BR")}`}
+                      Criado em {new Date(document.createdAt).toLocaleDateString("pt-BR")}
                     </CardDescription>
                   </div>
                   {getStatusBadge(document.status)}
                 </div>
               </CardHeader>
               <CardContent>
-                {document.file_url ? (
-                  <div className="w-full h-[600px] border rounded-lg overflow-hidden">
-                    <iframe
-                      src={document.file_url}
-                      className="w-full h-full"
-                      title="Visualização do Documento"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-full h-[600px] border rounded-lg flex items-center justify-center bg-muted">
-                    <p className="text-muted-foreground">
-                      Pré-visualização não disponível
-                    </p>
-                  </div>
-                )}
+                <div className="w-full h-[600px] border rounded-lg flex items-center justify-center bg-muted">
+                  <p className="text-muted-foreground">
+                    Pré-visualização disponível após download
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
-            {/* Actions History */}
+            {/* Timeline */}
             <Card>
               <CardHeader>
-                <CardTitle>Histórico de Ações</CardTitle>
+                <CardTitle>Linha do Tempo</CardTitle>
                 <CardDescription>
-                  Linha do tempo de todas as ações realizadas neste documento
+                  Status de cada signatário
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {document.actions && document.actions.length > 0 ? (
+                {document.flowActions && document.flowActions.length > 0 ? (
                   <div className="space-y-4">
-                    {document.actions.map((action, index) => (
-                      <div key={index} className="flex gap-4">
+                    {document.flowActions.map((action, index) => (
+                      <div key={action.id} className="flex gap-4">
                         <div className="flex flex-col items-center">
-                          <div className="w-2 h-2 rounded-full bg-primary" />
-                          {index !== document.actions!.length - 1 && (
-                            <div className="w-0.5 h-full bg-border" />
+                          {getSignerStatusIcon(action.status)}
+                          {index !== document.flowActions!.length - 1 && (
+                            <div className="w-0.5 flex-1 bg-border mt-2" />
                           )}
                         </div>
                         <div className="flex-1 pb-4">
-                          <p className="font-medium">{action.action}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {action.user} • {new Date(action.date).toLocaleString("pt-BR")}
-                          </p>
+                          <p className="font-medium">{action.signerName}</p>
+                          <p className="text-sm text-muted-foreground">{action.signerEmail}</p>
+                          {action.signedAt && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Assinado em {new Date(action.signedAt).toLocaleString("pt-BR")}
+                            </p>
+                          )}
+                          {action.status.toLowerCase() === 'pending' && (
+                            <div className="flex gap-2 mt-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleGenerateUrl(action.id)}
+                              >
+                                <ExternalLink className="h-3 w-3 mr-1" />
+                                Abrir Link
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleSendReminder(action.id)}
+                              >
+                                <Send className="h-3 w-3 mr-1" />
+                                Lembrete
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <p className="text-center text-muted-foreground py-8">
-                    Nenhuma ação registrada ainda
+                    Nenhum signatário adicionado
                   </p>
                 )}
               </CardContent>
             </Card>
           </div>
 
-          {/* Sidebar - Signers and Actions */}
+          {/* Sidebar */}
           <div className="space-y-6">
             {/* Actions Card */}
             <Card>
@@ -208,41 +213,6 @@ const DocumentDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Signers Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Signatários</CardTitle>
-                <CardDescription>
-                  {document.signers?.length || 0} signatário(s)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {document.signers && document.signers.length > 0 ? (
-                  <div className="space-y-4">
-                    {document.signers.map((signer, index) => (
-                      <div key={index} className="flex items-start gap-3">
-                        {getSignerStatusIcon(signer.status)}
-                        <div className="flex-1">
-                          <p className="font-medium">{signer.name}</p>
-                          <p className="text-sm text-muted-foreground">{signer.email}</p>
-                          {signer.signed_at && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Assinado em{" "}
-                              {new Date(signer.signed_at).toLocaleString("pt-BR")}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center text-muted-foreground py-8">
-                    Nenhum signatário adicionado
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
             {/* Document Info */}
             <Card>
               <CardHeader>
@@ -251,7 +221,7 @@ const DocumentDetail = () => {
               <CardContent className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">ID:</span>
-                  <span className="font-mono">{document.id.slice(0, 8)}...</span>
+                  <span className="font-mono">{document.id}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Status:</span>
@@ -260,8 +230,20 @@ const DocumentDetail = () => {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Criado:</span>
                   <span>
-                    {document.created_at ? new Date(document.created_at).toLocaleDateString("pt-BR") : "-"}
+                    {new Date(document.createdAt).toLocaleDateString("pt-BR")}
                   </span>
+                </div>
+                {document.expirationDate && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Expira:</span>
+                    <span>
+                      {new Date(document.expirationDate).toLocaleDateString("pt-BR")}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Signatários:</span>
+                  <span>{document.flowActions?.length || 0}</span>
                 </div>
               </CardContent>
             </Card>
