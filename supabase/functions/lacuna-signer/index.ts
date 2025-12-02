@@ -1,52 +1,75 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Allowed origins for CORS - restrict to your application domains
+const allowedOrigins = [
+  'https://jloqdyvkcpsixgnakxgy.lovableproject.com',
+  'https://lovable.dev',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
 
-interface CreateDocumentRequest {
-  action: 'create';
-  fileName: string;
-  fileContent: string; // base64
-  signers: Array<{
-    name: string;
-    email: string;
-    identifier?: string;
-  }>;
-  description?: string;
-}
-
-interface ListDocumentsRequest {
-  action: 'list';
-  limit?: number;
-  offset?: number;
-}
-
-interface GetDocumentRequest {
-  action: 'get';
-  documentId: string;
-}
-
-interface AddSignerRequest {
-  action: 'add-signer';
-  documentId: string;
-  signer: {
-    name: string;
-    email: string;
-    identifier?: string;
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') || '';
+  const allowedOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+  
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   };
 }
 
-interface DeleteDocumentRequest {
-  action: 'delete';
-  documentId: string;
-}
+// Input validation schemas
+const signerSchema = z.object({
+  name: z.string().min(1, "Signer name is required").max(100, "Signer name too long"),
+  email: z.string().email("Invalid email address").max(255, "Email too long"),
+  identifier: z.string().max(50, "Identifier too long").optional(),
+});
 
-type RequestBody = CreateDocumentRequest | ListDocumentsRequest | GetDocumentRequest | AddSignerRequest | DeleteDocumentRequest;
+const createDocumentSchema = z.object({
+  action: z.literal('create'),
+  fileName: z.string().min(1, "File name is required").max(255, "File name too long"),
+  fileContent: z.string().min(1, "File content is required").max(50_000_000, "File too large"), // ~37MB base64
+  signers: z.array(signerSchema).min(1, "At least one signer is required").max(50, "Too many signers"),
+  description: z.string().max(1000, "Description too long").optional(),
+});
+
+const listDocumentsSchema = z.object({
+  action: z.literal('list'),
+  limit: z.number().int().min(1).max(100).optional(),
+  offset: z.number().int().min(0).optional(),
+});
+
+const getDocumentSchema = z.object({
+  action: z.literal('get'),
+  documentId: z.string().uuid("Invalid document ID"),
+});
+
+const addSignerSchema = z.object({
+  action: z.literal('add-signer'),
+  documentId: z.string().uuid("Invalid document ID"),
+  signer: signerSchema,
+});
+
+const deleteDocumentSchema = z.object({
+  action: z.literal('delete'),
+  documentId: z.string().uuid("Invalid document ID"),
+});
+
+const requestBodySchema = z.discriminatedUnion('action', [
+  createDocumentSchema,
+  listDocumentsSchema,
+  getDocumentSchema,
+  addSignerSchema,
+  deleteDocumentSchema,
+]);
+
+type RequestBody = z.infer<typeof requestBodySchema>;
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -103,13 +126,39 @@ serve(async (req) => {
       );
     }
 
-    const body: RequestBody = await req.json();
+    // Parse and validate request body
+    let rawBody: unknown;
+    try {
+      rawBody = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON in request body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const validationResult = requestBodySchema.safeParse(rawBody);
+    if (!validationResult.success) {
+      console.error('Validation error:', validationResult.error.errors);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid request data', 
+          details: validationResult.error.errors.map(e => ({
+            field: e.path.join('.'),
+            message: e.message
+          }))
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const body: RequestBody = validationResult.data;
     const lacunaHeaders = {
       'Authorization': `Bearer ${lacunaApiKey}`,
       'Content-Type': 'application/json',
     };
 
-    console.log(`Processing action: ${body.action}`);
+    console.log(`Processing action: ${body.action} for user: ${user.id}`);
 
     // Handle different actions
     switch (body.action) {
@@ -149,7 +198,7 @@ serve(async (req) => {
         }
 
         const lacunaDocument = await lacunaResponse.json();
-        console.log('Document created in Lacuna:', lacunaDocument);
+        console.log('Document created in Lacuna:', lacunaDocument.id);
 
         // Cache document in our database
         const { data: cachedDoc, error: cacheError } = await supabase
@@ -382,8 +431,9 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error('Error in lacuna-signer function:', error);
+    const corsHeaders = getCorsHeaders(req);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
