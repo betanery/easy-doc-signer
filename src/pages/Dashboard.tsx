@@ -1,196 +1,195 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { Sidebar } from "@/components/Sidebar";
+import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DocumentNotifications } from "@/components/DocumentNotifications";
-import { FileText, Settings, LogOut, Upload, FolderOpen, Building2 } from "lucide-react";
-import { DashboardStats } from "@/components/DashboardStats";
-import { DocumentsChart } from "@/components/DocumentsChart";
-import { Logo } from "@/components/Logo";
+import { FileText, Upload, FolderOpen, Building2, TrendingUp, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import { trpc } from "@/lib/trpc/react";
+import { Loading } from "@/components/Loading";
 import { ManageSubscriptionButton } from "@/components/ManageSubscriptionButton";
-import { useTRPCAuth } from "@/hooks/useTRPC";
-import type { AuthUser } from "@/lib/trpc/types";
+import { Progress } from "@/components/ui/progress";
 
-const Dashboard = () => {
+export default function Dashboard() {
   const navigate = useNavigate();
-  const { loading, user, fetchUser, logout } = useTRPCAuth();
-  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const meQuery = trpc.auth.me.useQuery(undefined as any);
+  const statsQuery = trpc.mdsign.stats.useQuery(undefined as any);
+
+  const user = meQuery.data as any;
+  const stats = statsQuery.data as any;
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const userData = await fetchUser();
-      if (!userData) {
-        navigate("/auth");
-        return;
-      }
-      setCurrentUser(userData);
-    };
-    checkAuth();
-  }, [fetchUser, navigate]);
+    if (meQuery.error) {
+      navigate("/auth");
+    }
+  }, [meQuery.error, navigate]);
 
-  const handleSignOut = () => {
-    logout();
-    navigate("/auth");
-  };
-
-  if (loading || !currentUser) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
+  if (meQuery.isLoading) {
+    return <Loading fullScreen />;
   }
 
+  const usage = stats?.usage;
+  const documents = stats?.documents;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-      {/* Header */}
-      <header className="border-b bg-card/80 backdrop-blur-lg sticky top-0 z-50 shadow-elegant">
-        <div className="container flex h-20 items-center justify-between">
-          <Logo size="md" />
-          
-          <div className="flex items-center gap-4">
-            <DocumentNotifications />
-            <span className="text-sm text-muted-foreground hidden md:inline">
-              {currentUser.email}
-            </span>
-            <Button variant="ghost" size="icon" onClick={handleSignOut} className="hover:bg-primary/10">
-              <LogOut className="h-5 w-5" />
-            </Button>
+    <div className="flex min-h-screen bg-background">
+      <Sidebar />
+      <div className="flex-1 flex flex-col">
+        <div className="p-8">
+          <Navbar userName={user?.name} userEmail={user?.email} />
+
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-1">
+              Olá, {user?.name?.split(" ")[0] || "Usuário"}!
+            </h1>
+            <p className="text-muted-foreground">
+              Bem-vindo ao MDSign. Veja seu resumo de atividades.
+            </p>
+          </div>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Total de Documentos</CardDescription>
+                <CardTitle className="text-3xl flex items-center gap-2">
+                  <FileText className="w-6 h-6 text-primary" />
+                  {documents?.total || 0}
+                </CardTitle>
+              </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Pendentes</CardDescription>
+                <CardTitle className="text-3xl flex items-center gap-2">
+                  <Clock className="w-6 h-6 text-status-warning" />
+                  {documents?.byStatus?.PENDING || 0}
+                </CardTitle>
+              </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Concluídos</CardDescription>
+                <CardTitle className="text-3xl flex items-center gap-2">
+                  <CheckCircle2 className="w-6 h-6 text-status-success" />
+                  {documents?.byStatus?.CONCLUDED || 0}
+                </CardTitle>
+              </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Taxa de Conclusão</CardDescription>
+                <CardTitle className="text-3xl flex items-center gap-2">
+                  <TrendingUp className="w-6 h-6 text-status-info" />
+                  {stats?.statistics?.completionRate?.toFixed(0) || 0}%
+                </CardTitle>
+              </CardHeader>
+            </Card>
+          </div>
+
+          {/* Usage Card */}
+          {usage && (
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle>Uso do Plano</CardTitle>
+                <CardDescription>
+                  Plano {stats?.currentPlan?.displayName || stats?.currentPlan?.name}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {usage.freeTrial && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Documentos utilizados</span>
+                      <span className="font-medium">
+                        {usage.freeTrial.used} / {usage.freeTrial.limit}
+                      </span>
+                    </div>
+                    <Progress
+                      value={(usage.freeTrial.used / usage.freeTrial.limit) * 100}
+                      className="h-3"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Restam {usage.freeTrial.remaining} documentos gratuitos
+                    </p>
+                  </div>
+                )}
+                {usage.monthly && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Documentos este mês ({usage.monthly.yearMonth})</span>
+                      <span className="font-medium">
+                        {usage.monthly.used} / {usage.monthly.limit}
+                      </span>
+                    </div>
+                    <Progress
+                      value={(usage.monthly.used / usage.monthly.limit) * 100}
+                      className="h-3"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Restam {usage.monthly.remaining} documentos neste período
+                    </p>
+                  </div>
+                )}
+                {usage.unlimited && (
+                  <div className="text-center py-4">
+                    <p className="text-2xl font-bold text-primary">
+                      {usage.unlimited.totalDocuments}
+                    </p>
+                    <p className="text-muted-foreground">documentos criados (ilimitado)</p>
+                  </div>
+                )}
+                <div className="mt-4 flex gap-2">
+                  <ManageSubscriptionButton />
+                  <Button variant="outline" onClick={() => navigate("/planos")}>
+                    Ver planos
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Quick Actions */}
+          <h2 className="text-xl font-semibold mb-4">Ações Rápidas</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Card className="group hover:shadow-lg transition-all cursor-pointer" onClick={() => navigate('/documents/create')}>
+              <CardHeader>
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-purple-700 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                  <Upload className="w-6 h-6 text-white" />
+                </div>
+                <CardTitle className="text-lg">Novo Documento</CardTitle>
+                <CardDescription>
+                  Envie um documento para assinatura
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="group hover:shadow-lg transition-all cursor-pointer" onClick={() => navigate('/documents')}>
+              <CardHeader>
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                  <FileText className="w-6 h-6 text-white" />
+                </div>
+                <CardTitle className="text-lg">Ver Documentos</CardTitle>
+                <CardDescription>
+                  Acompanhe o status das assinaturas
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="group hover:shadow-lg transition-all cursor-pointer" onClick={() => navigate('/folders')}>
+              <CardHeader>
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                  <FolderOpen className="w-6 h-6 text-white" />
+                </div>
+                <CardTitle className="text-lg">Pastas</CardTitle>
+                <CardDescription>
+                  Organize seus documentos
+                </CardDescription>
+              </CardHeader>
+            </Card>
           </div>
         </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Bem-vindo ao MDSign, {currentUser.name}!
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Organização: {currentUser.tenant.name} • Plano: {currentUser.tenant.plan}
-          </p>
-        </div>
-
-        {/* Statistics */}
-        <div className="mb-8">
-          <DashboardStats />
-        </div>
-
-        {/* Chart */}
-        <div className="mb-8">
-          <DocumentsChart />
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="group hover:shadow-premium transition-all duration-300 cursor-pointer border-primary/20 hover:border-primary/40 overflow-hidden relative" onClick={() => navigate('/documents')}>
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <CardHeader className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <FileText className="h-8 w-8 text-white" />
-              </div>
-              <CardTitle className="text-xl">Documentos</CardTitle>
-              <CardDescription>
-                Gerencie e assine seus documentos
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="relative">
-              <Button className="w-full bg-gradient-to-r from-primary to-primary-glow hover:opacity-90 transition-opacity" asChild>
-                <Link to="/documents">Acessar</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="group hover:shadow-premium transition-all duration-300 cursor-pointer border-secondary/20 hover:border-secondary/40 overflow-hidden relative" onClick={() => navigate('/folders')}>
-            <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <CardHeader className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-secondary to-orange-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <FolderOpen className="h-8 w-8 text-white" />
-              </div>
-              <CardTitle className="text-xl">Pastas</CardTitle>
-              <CardDescription>
-                Organize seus documentos em pastas
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="relative">
-              <Button className="w-full" variant="outline" asChild>
-                <Link to="/folders">Acessar</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="group hover:shadow-premium transition-all duration-300 cursor-pointer border-primary/20 hover:border-primary/40 overflow-hidden relative" onClick={() => navigate('/organizations')}>
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <CardHeader className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Building2 className="h-8 w-8 text-white" />
-              </div>
-              <CardTitle className="text-xl">Organizações</CardTitle>
-              <CardDescription>
-                Gerencie suas organizações
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="relative">
-              <Button className="w-full bg-gradient-to-r from-primary to-primary-glow hover:opacity-90 transition-opacity" asChild>
-                <Link to="/organizations">Acessar</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card className="mt-8 border-primary/20 shadow-elegant overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 pointer-events-none" />
-          <CardHeader className="relative">
-            <CardTitle className="text-xl">Ações Rápidas</CardTitle>
-            <CardDescription>
-              Acesso rápido às principais funcionalidades
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 relative">
-            <div className="flex items-center gap-4 p-5 border rounded-xl hover:border-primary/40 transition-all group hover:shadow-md bg-card/50">
-              <div className="flex-1">
-                <h3 className="font-semibold group-hover:text-primary transition-colors">Novo Documento</h3>
-                <p className="text-sm text-muted-foreground">
-                  Envie um documento para assinatura
-                </p>
-              </div>
-              <Button asChild className="bg-gradient-to-r from-primary to-primary-glow">
-                <Link to="/documents/upload">
-                  <Upload className="w-4 h-4 mr-2" />
-                  Enviar
-                </Link>
-              </Button>
-            </div>
-            
-            <div className="flex items-center gap-4 p-5 border rounded-xl hover:border-primary/40 transition-all group hover:shadow-md bg-card/50">
-              <div className="flex-1">
-                <h3 className="font-semibold group-hover:text-primary transition-colors">Ver Planos</h3>
-                <p className="text-sm text-muted-foreground">
-                  Compare e faça upgrade do seu plano
-                </p>
-              </div>
-              <Button asChild variant="outline">
-                <Link to="/planos">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Ver Planos
-                </Link>
-              </Button>
-            </div>
-
-            <div className="flex items-center gap-4 p-5 border rounded-xl hover:border-primary/40 transition-all group hover:shadow-md bg-card/50">
-              <div className="flex-1">
-                <h3 className="font-semibold group-hover:text-primary transition-colors">Gerenciar Assinatura</h3>
-                <p className="text-sm text-muted-foreground">
-                  Altere seu plano, método de pagamento ou cancele
-                </p>
-              </div>
-              <ManageSubscriptionButton />
-            </div>
-          </CardContent>
-        </Card>
-      </main>
+      </div>
     </div>
   );
-};
-
-export default Dashboard;
+}
