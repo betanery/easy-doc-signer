@@ -1,5 +1,6 @@
 import { createTRPCReact } from "@trpc/react-query";
 import { httpLink } from "@trpc/client";
+import superjson from "superjson";
 
 // Workaround for tRPC v11 strict type checking without backend types
 // We cast to 'any' to bypass the router type validation
@@ -10,6 +11,7 @@ export const trpc = createUntypedTRPC();
 const TRPC_URL = import.meta.env.VITE_API_URL || "https://mdsignapi-2n7ddbk9.manus.space/api/trpc";
 
 export const trpcClient = (trpc as any).createClient({
+  transformer: superjson,
   links: [
     httpLink({
       url: TRPC_URL,
