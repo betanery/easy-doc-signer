@@ -15,6 +15,12 @@ export const trpcClient = (trpc as any).createClient({
   links: [
     httpLink({
       url: TRPC_URL,
+      fetch(url, options) {
+        return fetch(url, {
+          ...options,
+          credentials: 'include',
+        });
+      },
       headers() {
         if (typeof window === "undefined") return {};
         const token = localStorage.getItem("auth_token");
