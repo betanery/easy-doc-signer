@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
-import { removeAuthToken } from "@/lib/trpc/react";
+import { removeAuthToken } from "@/lib/trpc";
 
 interface NavbarProps {
   userName?: string;

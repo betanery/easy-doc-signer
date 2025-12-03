@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { trpc } from "@/lib/trpc/react";
+import { trpc } from "@/lib/trpc";
 import { Loader2, FileSignature, AlertCircle } from "lucide-react";
 
 export default function SignDocumentPage() {

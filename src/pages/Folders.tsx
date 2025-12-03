@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Folder, Plus, Trash2, Edit2, FileText } from "lucide-react";
-import { trpc } from "@/lib/trpc/react";
+import { trpc } from "@/lib/trpc";
 import { Loading } from "@/components/Loading";
 import { toast } from "sonner";
 
