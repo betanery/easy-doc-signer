@@ -399,8 +399,9 @@ export default function DocumentUpload() {
       </div>
 
       <PremiumBlockModal
-        isOpen={showPremiumModal}
+        open={showPremiumModal}
         onClose={() => setShowPremiumModal(false)}
+        planType={statsQuery.data?.plan?.toUpperCase() === 'CEDRO' ? 'FREE_TRIAL' : 'MONTHLY'}
       />
     </div>
   );
