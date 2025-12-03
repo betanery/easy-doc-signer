@@ -126,7 +126,7 @@ export default function DocumentsList() {
     const documentId = e.dataTransfer.getData('documentId');
     if (documentId) {
       moveToFolderMutation.mutate({ 
-        documentId: Number(documentId), 
+        documentId, 
         folderId 
       } as any);
     }
