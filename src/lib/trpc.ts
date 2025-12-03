@@ -23,15 +23,43 @@ export const trpcClient = (trpc as any).createClient({
       transformer: superjson,
       headers() {
         if (typeof window === "undefined") return {};
+
         const token = localStorage.getItem(TOKEN_KEY);
-        console.log("[tRPC] Token being sent:", token ? `${token.substring(0, 20)}...` : "NO TOKEN");
-        return token ? { Authorization: `Bearer ${token}` } : {};
+
+        // Corrigir problema do NO TOKEN - verificar valores inválidos
+        if (!token || token === "undefined" || token === "null" || token.trim() === "") {
+          console.log("[tRPC] No valid token available");
+          return {};
+        }
+
+        console.log("[tRPC] Token being sent:", `${token.substring(0, 20)}...`);
+        return {
+          Authorization: `Bearer ${token}`,
+        };
       },
     }),
   ],
 });
 
 // Auth helpers
-export const getAuthToken = () => localStorage.getItem(TOKEN_KEY);
-export const setAuthToken = (token: string) => localStorage.setItem(TOKEN_KEY, token);
-export const removeAuthToken = () => localStorage.removeItem(TOKEN_KEY);
+export const getAuthToken = (): string | null => {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token || token === "undefined" || token === "null" || token.trim() === "") {
+    return null;
+  }
+  return token;
+};
+
+export const setAuthToken = (token: string) => {
+  if (token && token !== "undefined" && token !== "null") {
+    localStorage.setItem(TOKEN_KEY, token);
+  }
+};
+
+export const removeAuthToken = () => {
+  localStorage.removeItem(TOKEN_KEY);
+};
+
+export const isAuthenticated = (): boolean => {
+  return getAuthToken() !== null;
+};

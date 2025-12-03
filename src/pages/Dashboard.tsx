@@ -1,30 +1,31 @@
-import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, Upload, FolderOpen, TrendingUp, Clock, CheckCircle2 } from "lucide-react";
-import { trpc } from "@/lib/trpc";
+import { trpc, isAuthenticated } from "@/lib/trpc";
 import { Loading } from "@/components/Loading";
 import { ManageSubscriptionButton } from "@/components/ManageSubscriptionButton";
 import { Progress } from "@/components/ui/progress";
+import { useRequireAuth } from "@/hooks/useAuth";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const meQuery = trpc.auth.me.useQuery(undefined as any);
-  const statsQuery = trpc.mdsign.stats.useQuery(undefined as any);
+  const { user, isLoading: authLoading } = useRequireAuth();
+  
+  // Só busca stats se estiver autenticado
+  const hasToken = isAuthenticated();
+  const statsQuery = trpc.mdsign.stats.useQuery(undefined as any, {
+    enabled: hasToken,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
 
-  const user = meQuery.data as any;
   const stats = statsQuery.data as any;
 
-  useEffect(() => {
-    if (meQuery.error) {
-      navigate("/auth");
-    }
-  }, [meQuery.error, navigate]);
-
-  if (meQuery.isLoading) {
+  // Loading enquanto verifica auth
+  if (authLoading) {
     return <Loading fullScreen />;
   }
 
@@ -36,11 +37,11 @@ export default function Dashboard() {
       <Sidebar />
       <div className="flex-1 flex flex-col">
         <div className="p-8">
-          <Navbar userName={user?.name} userEmail={user?.email} />
+          <Navbar userName={(user as any)?.name} userEmail={(user as any)?.email} />
 
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-1">
-              Olá, {user?.name?.split(" ")[0] || "Usuário"}!
+              Olá, {(user as any)?.name?.split(" ")[0] || "Usuário"}!
             </h1>
             <p className="text-muted-foreground">
               Bem-vindo ao MDSign. Veja seu resumo de atividades.

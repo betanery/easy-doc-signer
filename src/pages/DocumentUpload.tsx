@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
-import { trpc } from '@/lib/trpc';
+import { trpc, isAuthenticated } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,6 +19,8 @@ import {
   Upload,
   Loader2,
 } from 'lucide-react';
+import { useRequireAuth } from '@/hooks/useAuth';
+import { Loading } from '@/components/Loading';
 
 type SignerRole = 'SIGNER' | 'APPROVER' | 'OBSERVER';
 type AuthType = 'EMAIL' | 'SMS' | 'EMAIL_SMS' | 'EMAIL_SELFIE';
@@ -35,6 +37,8 @@ interface Signer {
 
 export default function DocumentUpload() {
   const navigate = useNavigate();
+  const { isLoading: authLoading } = useRequireAuth();
+  const hasToken = isAuthenticated();
   
   const [file, setFile] = useState<File | null>(null);
   const [documentName, setDocumentName] = useState('');
@@ -43,11 +47,14 @@ export default function DocumentUpload() {
   ]);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   
-  // tRPC queries and mutations
+  // tRPC queries and mutations - só executa com token
   const statsQuery = trpc.mdsign.stats.useQuery(undefined, {
+    enabled: hasToken,
     retry: false,
     refetchOnWindowFocus: false,
   });
+  
+  if (authLoading) return <Loading fullScreen />;
   
   const uploadMutation = trpc.mdsign.documents.upload.useMutation({
     onError: (error: any) => {

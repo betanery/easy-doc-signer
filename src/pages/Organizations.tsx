@@ -13,15 +13,19 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Building2, Plus, Trash2, Users, Settings } from "lucide-react";
-import { trpc } from "@/lib/trpc";
+import { trpc, isAuthenticated } from "@/lib/trpc";
 import { Loading } from "@/components/Loading";
 import { toast } from "sonner";
+import { useRequireAuth } from "@/hooks/useAuth";
 
 export default function OrganizationsPage() {
+  const { isLoading: authLoading } = useRequireAuth();
+  const hasToken = isAuthenticated();
+  
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newOrgName, setNewOrgName] = useState("");
 
-  const orgsQuery = trpc.mdsign.organizations.list.useQuery({ includeUserCount: true } as any);
+  const orgsQuery = trpc.mdsign.organizations.list.useQuery({ includeUserCount: true } as any, { enabled: hasToken });
   const createOrg = trpc.mdsign.organizations.create.useMutation({
     onSuccess: () => {
       toast.success("Organização criada com sucesso!");
@@ -100,7 +104,7 @@ export default function OrganizationsPage() {
             </Dialog>
           </div>
 
-          {orgsQuery.isLoading ? (
+          {(authLoading || orgsQuery.isLoading) ? (
             <Loading />
           ) : (orgsQuery.data as any)?.organizations?.length === 0 ? (
             <Card className="border-dashed">
