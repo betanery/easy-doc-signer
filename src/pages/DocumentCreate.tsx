@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { UploadBox } from "@/components/UploadBox";
 import { Plus, Trash2, Upload, FileText, Loader2 } from "lucide-react";
-import { trpc } from "@/lib/trpc/react";
+import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
 type SignerForm = {
@@ -60,7 +60,7 @@ export default function DocumentCreatePage() {
     setFileName(file.name);
     
     (uploadMutation.mutate as any)(
-      { fileName: file.name, fileContent: base64 },
+      { fileName: file.name, contentType: file.type, fileBase64: base64 },
       {
         onSuccess: (res: any) => {
           setUploadId(res.uploadId);
