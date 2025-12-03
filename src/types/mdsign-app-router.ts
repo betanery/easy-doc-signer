@@ -517,15 +517,16 @@ export type AppRouter = {
       upload: { input: UploadInput; output: UploadOutput };
       create: { input: CreateDocumentInput; output: CreateDocumentOutput };
       list: { input: ListDocumentsInput; output: ListDocumentsOutput };
-      getById: { input: GetDocumentInput; output: GetDocumentOutput };
-      generateActionUrl: { input: GenerateActionUrlInput; output: GenerateActionUrlOutput };
+      get: { input: GetDocumentInput; output: GetDocumentOutput };
+      createActionUrl: { input: GenerateActionUrlInput; output: GenerateActionUrlOutput };
       sendReminder: { input: SendReminderInput; output: SendReminderOutput };
       download: { input: DownloadDocumentInput; output: DownloadDocumentOutput };
+      moveToFolder: { input: { documentId: string; folderId: number }; output: { success: boolean } };
     };
     folders: {
       create: { input: CreateFolderInput; output: CreateFolderOutput };
       list: { input: ListFoldersInput; output: ListFoldersOutput };
-      getById: { input: GetFolderInput; output: GetFolderOutput };
+      get: { input: GetFolderInput; output: GetFolderOutput };
       tree: { input: void; output: FolderTreeOutput };
       update: { input: UpdateFolderInput; output: UpdateFolderOutput };
       delete: { input: DeleteFolderInput; output: DeleteFolderOutput };
@@ -533,12 +534,12 @@ export type AppRouter = {
     organizations: {
       create: { input: CreateOrganizationInput; output: CreateOrganizationOutput };
       list: { input: ListOrganizationsInput; output: ListOrganizationsOutput };
-      getById: { input: GetOrganizationInput; output: GetOrganizationOutput };
+      get: { input: GetOrganizationInput; output: GetOrganizationOutput };
       update: { input: UpdateOrganizationInput; output: UpdateOrganizationOutput };
       delete: { input: DeleteOrganizationInput; output: DeleteOrganizationOutput };
       addUser: { input: AddUserToOrganizationInput; output: AddUserToOrganizationOutput };
       removeUser: { input: RemoveUserFromOrganizationInput; output: RemoveUserFromOrganizationOutput };
-      users: { input: GetOrganizationUsersInput; output: GetOrganizationUsersOutput };
+      getUsers: { input: GetOrganizationUsersInput; output: GetOrganizationUsersOutput };
     };
     stats: { input: void; output: StatsOutput };
     upgradePlan: { input: UpgradePlanInput; output: UpgradePlanOutput };
@@ -547,8 +548,7 @@ export type AppRouter = {
     removeLacunaCredentials: { input: void; output: RemoveLacunaCredentialsOutput };
   };
   billing: {
-    createCustomer: { input: void; output: CreateCustomerOutput };
-    createCheckout: { input: CreateCheckoutInput; output: CreateCheckoutOutput };
-    getCustomerPortal: { input: void; output: GetCustomerPortalOutput };
+    createCheckoutSession: { input: CreateCheckoutInput; output: CreateCheckoutOutput };
+    createPortalSession: { input: void; output: GetCustomerPortalOutput };
   };
 };
