@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { trpc, isAuthenticated } from "@/lib/trpc";
 import { useRequireAuth } from "@/hooks/useAuth";
@@ -8,53 +7,20 @@ import { Sidebar } from "@/components/Sidebar";
 import { Navbar } from "@/components/Navbar";
 import { Loading } from "@/components/Loading";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { toast } from "sonner";
-import { Settings, CheckCircle, XCircle, Loader2, Key, Building } from "lucide-react";
+import { Settings, CheckCircle, XCircle, Loader2, ExternalLink } from "lucide-react";
 
 export default function LacunaSettings() {
   const navigate = useNavigate();
   const { isLoading: authLoading, isAuthenticated: isAuth } = useRequireAuth();
   const hasToken = isAuthenticated();
 
-  const [lacunaApiKey, setLacunaApiKey] = useState("");
-  const [lacunaOrganizationId, setLacunaOrganizationId] = useState("");
-
-  // Query para verificar status atual
+  // Query para verificar status atual (backend valida)
   const statusQuery = trpc.mdsign.lacunaStatus.useQuery(undefined as any, {
     enabled: hasToken && isAuth,
     retry: false,
   });
-
-  // Mutation para configurar
-  const configureMutation = trpc.mdsign.configureLacuna.useMutation({
-    onSuccess: () => {
-      toast.success("Configuração aplicada com sucesso!");
-      statusQuery.refetch();
-      setLacunaApiKey("");
-      setLacunaOrganizationId("");
-    },
-    onError: (error: any) => {
-      toast.error(error.message || "Erro ao configurar Lacuna");
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!lacunaApiKey.trim()) {
-      toast.error("Informe a API Key da Lacuna");
-      return;
-    }
-
-    configureMutation.mutate({
-      lacunaApiKey: lacunaApiKey.trim(),
-      lacunaOrganizationId: lacunaOrganizationId.trim() || undefined,
-    } as any);
-  };
 
   if (authLoading) {
     return <Loading />;
@@ -75,7 +41,7 @@ export default function LacunaSettings() {
               <div>
                 <h1 className="text-2xl font-bold">Configuração Lacuna</h1>
                 <p className="text-muted-foreground">
-                  Configure suas credenciais para ativar as funcionalidades de assinatura digital
+                  Status da integração com assinatura digital
                 </p>
               </div>
             </div>
@@ -98,7 +64,7 @@ export default function LacunaSettings() {
                     <CheckCircle className="h-4 w-4 text-green-600" />
                     <AlertTitle className="text-green-600">Configurado</AlertTitle>
                     <AlertDescription className="text-green-700 dark:text-green-400">
-                      Suas credenciais da Lacuna estão configuradas e funcionando corretamente.
+                      A integração com Lacuna está ativa. Você pode criar e assinar documentos.
                     </AlertDescription>
                   </Alert>
                 ) : (
@@ -106,88 +72,47 @@ export default function LacunaSettings() {
                     <XCircle className="h-4 w-4" />
                     <AlertTitle>Não configurado</AlertTitle>
                     <AlertDescription>
-                      {statusQuery.data?.message || "Configure suas credenciais abaixo para ativar as funcionalidades de assinatura."}
+                      A integração com Lacuna ainda não foi configurada para sua conta.
+                      Entre em contato com o suporte para ativar.
                     </AlertDescription>
                   </Alert>
                 )}
               </CardContent>
             </Card>
 
-            {/* Configuration Form */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Credenciais da Lacuna</CardTitle>
-                <CardDescription>
-                  Insira suas credenciais de API da Lacuna Signer. Você pode obtê-las no painel da Lacuna.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="lacunaApiKey" className="flex items-center gap-2">
-                      <Key className="h-4 w-4" />
-                      API Key *
-                    </Label>
-                    <Input
-                      id="lacunaApiKey"
-                      type="password"
-                      placeholder="Sua API Key da Lacuna"
-                      value={lacunaApiKey}
-                      onChange={(e) => setLacunaApiKey(e.target.value)}
-                      disabled={configureMutation.isPending}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="lacunaOrganizationId" className="flex items-center gap-2">
-                      <Building className="h-4 w-4" />
-                      Organization ID (opcional)
-                    </Label>
-                    <Input
-                      id="lacunaOrganizationId"
-                      type="text"
-                      placeholder="ID da organização na Lacuna"
-                      value={lacunaOrganizationId}
-                      onChange={(e) => setLacunaOrganizationId(e.target.value)}
-                      disabled={configureMutation.isPending}
-                    />
-                  </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={configureMutation.isPending || !lacunaApiKey.trim()}
-                  >
-                    {configureMutation.isPending ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Salvando...
-                      </>
-                    ) : (
-                      "Salvar Configuração"
-                    )}
+            {/* Info Card */}
+            {!isConfigured && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Como ativar?</CardTitle>
+                  <CardDescription>
+                    A configuração das credenciais da Lacuna é feita pelo administrador do sistema.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Entre em contato com nosso suporte para solicitar a ativação da integração
+                    com assinatura digital na sua conta.
+                  </p>
+                  <Button variant="outline" asChild>
+                    <a 
+                      href="https://wa.me/5561999338061" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Falar com Suporte
+                    </a>
                   </Button>
-                </form>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
-            {/* Help Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Precisa de ajuda?</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm text-muted-foreground space-y-2">
-                <p>
-                  1. Acesse o painel da Lacuna Signer em{" "}
-                  <a href="https://signer.lacuna.software" target="_blank" rel="noopener noreferrer" className="text-primary underline">
-                    signer.lacuna.software
-                  </a>
-                </p>
-                <p>2. Vá em Configurações → API Keys</p>
-                <p>3. Crie uma nova API Key ou copie uma existente</p>
-                <p>4. Cole a chave no campo acima e salve</p>
-              </CardContent>
-            </Card>
+            {/* Back Button */}
+            <Button variant="ghost" onClick={() => navigate(-1)}>
+              ← Voltar
+            </Button>
           </div>
         </main>
       </div>
