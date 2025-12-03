@@ -41,18 +41,12 @@ export default function DocumentCreatePage() {
   const hasToken = isAuthenticated();
   const { isConfigured: lacunaConfigured, isLoading: lacunaLoading } = useLacunaStatus();
 
-  const foldersQuery = trpc.mdsign.folders.list.useQuery({ parentId: null } as any, { enabled: hasToken });
-  const uploadMutation = trpc.mdsign.documents.upload.useMutation();
-  const createMutation = trpc.mdsign.documents.create.useMutation();
-  
-  if (authLoading) return <Loading fullScreen />;
-
+  // All useState hooks MUST be before any conditional returns
   const [fileName, setFileName] = useState("");
   const [uploadId, setUploadId] = useState<string | null>(null);
   const [folderId, setFolderId] = useState<string>("");
   const [expirationDate, setExpirationDate] = useState<string>("");
   const [applyRubrica, setApplyRubrica] = useState(true);
-
   const [signers, setSigners] = useState<SignerForm[]>([
     {
       name: "",
@@ -65,6 +59,12 @@ export default function DocumentCreatePage() {
       rubrica: true,
     },
   ]);
+
+  const foldersQuery = trpc.mdsign.folders.list.useQuery({ parentId: null } as any, { enabled: hasToken });
+  const uploadMutation = trpc.mdsign.documents.upload.useMutation();
+  const createMutation = trpc.mdsign.documents.create.useMutation();
+  
+  if (authLoading) return <Loading fullScreen />;
 
   const handleFileSelect = async (file: File, base64: string) => {
     setFileName(file.name);
