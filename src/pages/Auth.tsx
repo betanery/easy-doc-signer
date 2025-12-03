@@ -185,6 +185,7 @@ const Auth = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className={errors.email ? "border-destructive" : ""}
+                      autoComplete="username"
                       required
                     />
                     {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
@@ -198,6 +199,7 @@ const Auth = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className={errors.password ? "border-destructive" : ""}
+                      autoComplete="current-password"
                       required
                     />
                     {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
