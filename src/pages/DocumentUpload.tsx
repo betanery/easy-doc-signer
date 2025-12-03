@@ -1,30 +1,30 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
-import { useTRPCDocuments, useTRPCStats } from '@/hooks/useTRPC';
+import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Logo } from "@/components/Logo";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Upload, 
-  FileText, 
-  X, 
-  Plus, 
-  ArrowLeft, 
-  Loader2,
-  AlertCircle
-} from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sidebar } from '@/components/Sidebar';
+import { Navbar } from '@/components/Navbar';
 import PremiumBlockModal from '@/components/PremiumBlockModal';
-import type { SignerRole, AuthType, SignatureType } from '@/lib/trpc/types';
+import { toast } from 'sonner';
+import {
+  FileText,
+  X,
+  Plus,
+  Trash2,
+  Upload,
+  Loader2,
+} from 'lucide-react';
+
+type SignerRole = 'SIGNER' | 'APPROVER' | 'OBSERVER';
+type AuthType = 'EMAIL' | 'SMS' | 'EMAIL_SMS' | 'EMAIL_SELFIE';
+type SignatureType = 'ELECTRONIC' | 'DIGITAL_CERT';
 
 interface Signer {
-  id: string;
   name: string;
   email: string;
   role: SignerRole;
@@ -35,393 +35,373 @@ interface Signer {
 
 export default function DocumentUpload() {
   const navigate = useNavigate();
-  const { upload, create, loading } = useTRPCDocuments();
-  const { getStats } = useTRPCStats();
   
   const [file, setFile] = useState<File | null>(null);
-  const [filePreview, setFilePreview] = useState<string | null>(null);
   const [documentName, setDocumentName] = useState('');
   const [signers, setSigners] = useState<Signer[]>([
-    { id: crypto.randomUUID(), name: '', email: '', role: 'SIGNER', orderStep: 1, authType: 'EMAIL', signatureType: 'ELECTRONIC' }
+    { name: '', email: '', role: 'SIGNER', orderStep: 1, authType: 'EMAIL', signatureType: 'ELECTRONIC' }
   ]);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
-  const [currentPlan, setCurrentPlan] = useState<string>('FREE_TRIAL');
-  const [isLimitReached, setIsLimitReached] = useState(false);
-
-  useEffect(() => {
-    const checkLimits = async () => {
-      const stats = await getStats();
-      if (stats) {
-        setCurrentPlan(stats.plan);
-        if (!stats.isUnlimited && stats.documentsLimit && stats.documentsUsed >= stats.documentsLimit) {
-          setIsLimitReached(true);
-          setShowPremiumModal(true);
-        }
+  
+  // tRPC queries and mutations
+  const statsQuery = trpc.mdsign.stats.useQuery(undefined, {
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+  
+  const uploadMutation = trpc.mdsign.documents.upload.useMutation({
+    onError: (error: any) => {
+      console.error('[Upload] Error:', error);
+      toast.error(error.message || 'Erro ao fazer upload');
+    },
+  });
+  
+  const createMutation = trpc.mdsign.documents.create.useMutation({
+    onSuccess: () => {
+      toast.success('Documento criado com sucesso!');
+      navigate('/documents');
+    },
+    onError: (error: any) => {
+      console.error('[Create] Error:', error);
+      if (error.data?.httpStatus === 402) {
+        setShowPremiumModal(true);
+      } else {
+        toast.error(error.message || 'Erro ao criar documento');
       }
-    };
-    checkLimits();
-  }, [getStats]);
+    },
+  });
+
+  const loading = uploadMutation.isPending || createMutation.isPending;
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    const droppedFile = acceptedFiles[0];
-    if (droppedFile) {
-      if (droppedFile.type !== 'application/pdf') {
-        toast({
-          title: "Formato inválido",
-          description: "Por favor, envie apenas arquivos PDF",
-          variant: "destructive",
-        });
-        return;
+    const pdfFile = acceptedFiles.find(f => f.type === 'application/pdf');
+    if (pdfFile) {
+      setFile(pdfFile);
+      if (!documentName) {
+        setDocumentName(pdfFile.name.replace('.pdf', ''));
       }
-
-      if (droppedFile.size > 20 * 1024 * 1024) {
-        toast({
-          title: "Arquivo muito grande",
-          description: "O arquivo deve ter no máximo 20MB",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setFile(droppedFile);
-      setDocumentName(droppedFile.name.replace('.pdf', ''));
-      
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setFilePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(droppedFile);
+    } else {
+      toast.error('Por favor, selecione um arquivo PDF');
     }
-  }, []);
+  }, [documentName]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: { 'application/pdf': ['.pdf'] },
     maxFiles: 1,
-    multiple: false
+    disabled: loading,
   });
 
   const addSigner = () => {
-    const newOrderStep = signers.length + 1;
-    setSigners([...signers, { 
-      id: crypto.randomUUID(), 
-      name: '', 
-      email: '', 
-      role: 'SIGNER', 
-      orderStep: newOrderStep,
-      authType: 'EMAIL',
-      signatureType: 'ELECTRONIC'
-    }]);
+    setSigners([
+      ...signers,
+      { 
+        name: '', 
+        email: '', 
+        role: 'SIGNER', 
+        orderStep: signers.length + 1, 
+        authType: 'EMAIL', 
+        signatureType: 'ELECTRONIC' 
+      }
+    ]);
   };
 
-  const removeSigner = (id: string) => {
+  const removeSigner = (index: number) => {
     if (signers.length > 1) {
-      const filtered = signers.filter(s => s.id !== id);
-      // Reorder steps
-      const reordered = filtered.map((s, idx) => ({ ...s, orderStep: idx + 1 }));
-      setSigners(reordered);
+      setSigners(signers.filter((_, i) => i !== index));
     }
   };
 
-  const updateSigner = <K extends keyof Signer>(id: string, field: K, value: Signer[K]) => {
-    setSigners(signers.map(s => s.id === id ? { ...s, [field]: value } : s));
+  const updateSigner = (index: number, field: keyof Signer, value: string | number) => {
+    const updated = [...signers];
+    updated[index] = { ...updated[index], [field]: value };
+    setSigners(updated);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const handleSubmit = async () => {
     if (!file) {
-      toast({
-        title: "Arquivo necessário",
-        description: "Por favor, envie um arquivo PDF",
-        variant: "destructive",
-      });
+      toast.error('Por favor, selecione um arquivo PDF');
       return;
     }
 
-    const validSigners = signers.filter(s => s.name && s.email);
+    if (!documentName.trim()) {
+      toast.error('Por favor, informe o nome do documento');
+      return;
+    }
+
+    const validSigners = signers.filter(s => s.name.trim() && s.email.trim());
     if (validSigners.length === 0) {
-      toast({
-        title: "Signatários necessários",
-        description: "Adicione pelo menos um signatário válido",
-        variant: "destructive",
-      });
+      toast.error('Adicione pelo menos um signatário');
       return;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const invalidEmails = validSigners.filter(s => !emailRegex.test(s.email));
-    if (invalidEmails.length > 0) {
-      toast({
-        title: "E-mails inválidos",
-        description: "Por favor, verifique os e-mails dos signatários",
-        variant: "destructive",
-      });
-      return;
+    // Check plan limits
+    const stats = statsQuery.data;
+    if (stats) {
+      const planName = stats.plan?.toUpperCase() || '';
+      if (planName === 'CEDRO' && stats.documentsUsed >= 5) {
+        setShowPremiumModal(true);
+        return;
+      }
+      if (stats.documentsLimit && stats.documentsUsed >= stats.documentsLimit) {
+        setShowPremiumModal(true);
+        return;
+      }
     }
 
-    // Step 1: Upload file
-    const uploadId = await upload(file);
-    if (!uploadId) return;
+    try {
+      // Convert file to base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
 
-    // Step 2: Create document (without folderId - folders not available in backend)
-    const document = await create(
-      uploadId,
-      documentName || file.name,
-      validSigners.map(s => ({
-        name: s.name,
-        email: s.email,
-        role: s.role,
-        orderStep: s.orderStep,
-        authType: s.authType,
-        signatureType: s.signatureType,
-      }))
-    );
+      // Upload file
+      const uploadResult = await uploadMutation.mutateAsync({
+        fileName: file.name,
+        contentType: file.type,
+        fileBase64: base64.split(',')[1],
+      });
 
-    if (document) {
-      navigate('/documents');
+      if (!uploadResult.uploadId) {
+        toast.error('Erro ao fazer upload do arquivo');
+        return;
+      }
+
+      // Create document
+      await createMutation.mutateAsync({
+        uploadId: uploadResult.uploadId,
+        name: documentName.trim(),
+        signers: validSigners.map((s, idx) => ({
+          name: s.name.trim(),
+          email: s.email.trim(),
+          role: s.role,
+          orderStep: idx + 1,
+          authType: s.authType,
+          signatureType: s.signatureType,
+        })),
+      });
+    } catch (error) {
+      console.error('[Submit] Error:', error);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-      <PremiumBlockModal
-        open={showPremiumModal}
-        onClose={() => setShowPremiumModal(false)}
-        planType={currentPlan}
-      />
-      <header className="border-b bg-card/80 backdrop-blur-lg shadow-elegant">
-        <div className="container flex h-20 items-center">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/documents')} className="hover:bg-primary/10">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <Logo size="md" className="ml-4" />
-        </div>
-      </header>
+    <div className="min-h-screen bg-background flex">
+      <Sidebar />
+      <div className="flex-1 flex flex-col">
+        <Navbar />
+        <main className="flex-1 p-6 overflow-auto">
+          <div className="max-w-4xl mx-auto space-y-6">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Upload de Documento</h1>
+              <p className="text-muted-foreground mt-1">Faça upload de um PDF e configure os signatários</p>
+            </div>
 
-      <main className="container py-8 max-w-4xl">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Upload Area */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Documento PDF</CardTitle>
-              <CardDescription>
-                Envie o documento que precisa ser assinado (máx. 20MB)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {!file ? (
-                <div
-                  {...getRootProps()}
-                  className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${
-                    isDragActive 
-                      ? 'border-primary bg-primary/5' 
-                      : 'border-border hover:border-primary hover:bg-accent'
-                  }`}
-                >
-                  <input {...getInputProps()} />
-                  <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-lg font-medium mb-2">
-                    {isDragActive 
-                      ? 'Solte o arquivo aqui...' 
-                      : 'Arraste um arquivo PDF ou clique para selecionar'
-                    }
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Apenas arquivos PDF são aceitos
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border rounded-lg bg-accent">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="h-5 w-5" />
+                  Arquivo PDF
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {!file ? (
+                  <div
+                    {...getRootProps()}
+                    className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                      isDragActive 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <input {...getInputProps()} />
+                    <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    {isDragActive ? (
+                      <p className="text-primary">Solte o arquivo aqui...</p>
+                    ) : (
+                      <>
+                        <p className="text-foreground font-medium">Arraste um PDF ou clique para selecionar</p>
+                        <p className="text-muted-foreground text-sm mt-1">Apenas arquivos PDF são aceitos</p>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                     <div className="flex items-center gap-3">
-                      <FileText className="w-8 h-8 text-primary" />
+                      <FileText className="h-8 w-8 text-primary" />
                       <div>
-                        <p className="font-medium">{file.name}</p>
+                        <p className="font-medium text-foreground">{file.name}</p>
                         <p className="text-sm text-muted-foreground">
                           {(file.size / 1024 / 1024).toFixed(2)} MB
                         </p>
                       </div>
                     </div>
                     <Button
-                      type="button"
                       variant="ghost"
                       size="icon"
-                      onClick={() => {
-                        setFile(null);
-                        setFilePreview(null);
-                      }}
+                      onClick={() => setFile(null)}
+                      disabled={loading}
                     >
-                      <X className="w-4 h-4" />
+                      <X className="h-4 w-4" />
                     </Button>
                   </div>
+                )}
+              </CardContent>
+            </Card>
 
-                  {filePreview && (
-                    <div className="border rounded-lg overflow-hidden">
-                      <iframe
-                        src={filePreview}
-                        className="w-full h-96"
-                        title="PDF Preview"
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Document Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Detalhes do Documento</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="doc-name">Nome do Documento</Label>
+            <Card>
+              <CardHeader>
+                <CardTitle>Nome do Documento</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <Input
-                  id="doc-name"
                   placeholder="Ex: Contrato de Prestação de Serviços"
                   value={documentName}
                   onChange={(e) => setDocumentName(e.target.value)}
+                  disabled={loading}
                 />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Signers */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Signatários</CardTitle>
-                  <CardDescription>
-                    Adicione as pessoas que precisam assinar o documento
-                  </CardDescription>
-                </div>
-                <Button type="button" variant="outline" size="sm" onClick={addSigner}>
-                  <Plus className="w-4 h-4 mr-2" />
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Signatários</CardTitle>
+                <Button variant="outline" size="sm" onClick={addSigner} disabled={loading}>
+                  <Plus className="h-4 w-4 mr-1" />
                   Adicionar
                 </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {signers.map((signer, index) => (
-                <div key={signer.id} className="p-4 border rounded-lg space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Badge variant="outline">
-                      Etapa {signer.orderStep}
-                    </Badge>
-                    {signers.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeSigner(signer.id)}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    )}
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {signers.map((signer, index) => (
+                  <div key={index} className="p-4 border rounded-lg space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">Signatário {index + 1}</span>
+                      {signers.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeSigner(index)}
+                          disabled={loading}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Nome</Label>
+                        <Input
+                          placeholder="Nome completo"
+                          value={signer.name}
+                          onChange={(e) => updateSigner(index, 'name', e.target.value)}
+                          disabled={loading}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Email</Label>
+                        <Input
+                          type="email"
+                          placeholder="email@exemplo.com"
+                          value={signer.email}
+                          onChange={(e) => updateSigner(index, 'email', e.target.value)}
+                          disabled={loading}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Função</Label>
+                        <Select
+                          value={signer.role}
+                          onValueChange={(v) => updateSigner(index, 'role', v)}
+                          disabled={loading}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="SIGNER">Signatário</SelectItem>
+                            <SelectItem value="APPROVER">Aprovador</SelectItem>
+                            <SelectItem value="OBSERVER">Observador</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Autenticação</Label>
+                        <Select
+                          value={signer.authType}
+                          onValueChange={(v) => updateSigner(index, 'authType', v)}
+                          disabled={loading}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="EMAIL">Email</SelectItem>
+                            <SelectItem value="SMS">SMS</SelectItem>
+                            <SelectItem value="EMAIL_SMS">Email + SMS</SelectItem>
+                            <SelectItem value="EMAIL_SELFIE">Email + Selfie</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Tipo de Assinatura</Label>
+                        <Select
+                          value={signer.signatureType}
+                          onValueChange={(v) => updateSigner(index, 'signatureType', v)}
+                          disabled={loading}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ELECTRONIC">Eletrônica</SelectItem>
+                            <SelectItem value="DIGITAL_CERT">Certificado Digital</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                   </div>
-                  
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label>Nome</Label>
-                      <Input
-                        placeholder="Nome completo"
-                        value={signer.name}
-                        onChange={(e) => updateSigner(signer.id, 'name', e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>E-mail</Label>
-                      <Input
-                        type="email"
-                        placeholder="email@exemplo.com"
-                        value={signer.email}
-                        onChange={(e) => updateSigner(signer.id, 'email', e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Função</Label>
-                      <Select value={signer.role} onValueChange={(v) => updateSigner(signer.id, 'role', v as SignerRole)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="SIGNER">Signatário</SelectItem>
-                          <SelectItem value="APPROVER">Aprovador</SelectItem>
-                          <SelectItem value="OBSERVER">Observador</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Autenticação</Label>
-                      <Select value={signer.authType} onValueChange={(v) => updateSigner(signer.id, 'authType', v as AuthType)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="EMAIL">E-mail</SelectItem>
-                          <SelectItem value="SMS">SMS</SelectItem>
-                          <SelectItem value="EMAIL_SMS">E-mail + SMS</SelectItem>
-                          <SelectItem value="EMAIL_SELFIE">E-mail + Selfie</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Tipo de Assinatura</Label>
-                      <Select value={signer.signatureType} onValueChange={(v) => updateSigner(signer.id, 'signatureType', v as SignatureType)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="ELECTRONIC">Eletrônica</SelectItem>
-                          <SelectItem value="DIGITAL_CERT">Com Certificado Digital</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </CardContent>
+            </Card>
 
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Os signatários receberão um e-mail com o link para assinar o documento.
-                  A ordem das assinaturas seguirá a ordem da lista acima.
-                </AlertDescription>
-              </Alert>
-            </CardContent>
-          </Card>
-
-          {/* Actions */}
-          <div className="flex gap-4 justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate('/documents')}
-              disabled={loading}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={loading || !file || isLimitReached} onClick={() => isLimitReached && setShowPremiumModal(true)}>
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Enviando...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4 mr-2" />
-                  Enviar Documento
-                </>
-              )}
-            </Button>
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => navigate('/documents')}
+                disabled={loading}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={loading || !file}
+                className="bg-gradient-to-r from-primary to-primary-glow"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Criar Documento
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
-        </form>
-      </main>
+        </main>
+      </div>
+
+      <PremiumBlockModal
+        isOpen={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+      />
     </div>
   );
 }

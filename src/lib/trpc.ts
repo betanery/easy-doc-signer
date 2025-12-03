@@ -7,7 +7,7 @@ import superjson from "superjson";
 // Token key padronizado
 export const TOKEN_KEY = "mdsign_token";
 
-// Untyped approach - backend types not available
+// Untyped approach - backend types not available at compile time
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const createUntypedTRPC = createTRPCReact as any;
 export const trpc = createUntypedTRPC();
