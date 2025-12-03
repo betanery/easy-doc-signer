@@ -1,8 +1,9 @@
-import { FileText, Clock, CheckCircle2, XCircle, AlertCircle, Send } from "lucide-react";
+import { FileText, Clock, CheckCircle2, XCircle, AlertCircle, Send, GripVertical } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import type { DocumentStatus } from "@/types/mdsign-app-router";
 
 interface DocumentCardProps {
@@ -13,7 +14,10 @@ interface DocumentCardProps {
     createdAt: Date | string;
     signerCount: number;
     signedCount: number;
+    folderId?: number | null;
   };
+  draggable?: boolean;
+  onDragStart?: (docId: number) => void;
 }
 
 const statusConfig: Record<string, { label: string; icon: typeof CheckCircle2; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -24,17 +28,35 @@ const statusConfig: Record<string, { label: string; icon: typeof CheckCircle2; v
   EXPIRED: { label: "Expirado", icon: AlertCircle, variant: "destructive" },
 };
 
-export function DocumentCard({ doc }: DocumentCardProps) {
+export function DocumentCard({ doc, draggable = false, onDragStart }: DocumentCardProps) {
   const status = statusConfig[doc.status] || statusConfig.PENDING;
   const StatusIcon = status.icon;
   const createdDate = new Date(doc.createdAt).toLocaleDateString("pt-BR");
   const progress = doc.signerCount > 0 ? Math.round((doc.signedCount / doc.signerCount) * 100) : 0;
 
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData("documentId", String(doc.id));
+    e.dataTransfer.effectAllowed = "move";
+    onDragStart?.(doc.id);
+  };
+
   return (
-    <Card className="hover:shadow-lg transition-shadow group">
+    <Card 
+      className={cn(
+        "hover:shadow-lg transition-shadow group",
+        draggable && "cursor-grab active:cursor-grabbing"
+      )}
+      draggable={draggable}
+      onDragStart={handleDragStart}
+    >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
+            {draggable && (
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity cursor-grab">
+                <GripVertical className="w-4 h-4 text-muted-foreground" />
+              </div>
+            )}
             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
               <FileText className="w-5 h-5 text-primary" />
             </div>

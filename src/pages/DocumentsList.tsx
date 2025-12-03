@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Sidebar } from '@/components/Sidebar';
 import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -30,19 +30,29 @@ import {
   Download,
   Plus,
   LayoutGrid,
-  LayoutList
+  LayoutList,
+  Folder,
+  FolderInput,
+  X
 } from 'lucide-react';
 import { trpc, isAuthenticated } from '@/lib/trpc';
 import { Loading } from '@/components/Loading';
 import { useRequireAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import type { FolderListItem } from '@/types/mdsign-app-router';
 
 export default function DocumentsList() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { isLoading: authLoading } = useRequireAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [folderFilter, setFolderFilter] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [dragOverFolderId, setDragOverFolderId] = useState<number | null>(null);
+
+  // Get folder filter from URL
+  const folderFilter = searchParams.get('folder') || 'all';
 
   const hasToken = isAuthenticated();
   
@@ -51,7 +61,21 @@ export default function DocumentsList() {
     folderId: folderFilter !== 'all' ? Number(folderFilter) : undefined,
   } as any, { enabled: hasToken });
 
-  const foldersQuery = trpc.mdsign.folders.list.useQuery({ parentId: null } as any, { enabled: hasToken });
+  const foldersQuery = trpc.mdsign.folders.list.useQuery(
+    { parentId: null, includeDocumentCount: true } as any, 
+    { enabled: hasToken }
+  );
+
+  const moveToFolderMutation = trpc.mdsign.documents.moveToFolder.useMutation({
+    onSuccess: () => {
+      toast.success('Documento movido com sucesso!');
+      documentsQuery.refetch();
+      foldersQuery.refetch();
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Erro ao mover documento');
+    },
+  });
   
   if (authLoading) return <Loading fullScreen />;
 
@@ -64,6 +88,49 @@ export default function DocumentsList() {
         String(doc.id).includes(searchQuery)
       )
     : documents;
+
+  const currentFolder = folders.find((f: FolderListItem) => String(f.id) === folderFilter);
+
+  const handleFolderChange = (value: string) => {
+    if (value === 'all') {
+      searchParams.delete('folder');
+    } else {
+      searchParams.set('folder', value);
+    }
+    setSearchParams(searchParams);
+  };
+
+  const clearFolderFilter = () => {
+    searchParams.delete('folder');
+    setSearchParams(searchParams);
+  };
+
+  const handleDocumentDrop = (folderId: number) => {
+    const documentId = dragOverFolderId;
+    // Get document ID from drag data
+  };
+
+  const handleDragOver = (e: React.DragEvent, folderId: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverFolderId(folderId);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverFolderId(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, folderId: number) => {
+    e.preventDefault();
+    setDragOverFolderId(null);
+    const documentId = e.dataTransfer.getData('documentId');
+    if (documentId) {
+      moveToFolderMutation.mutate({ 
+        documentId: Number(documentId), 
+        folderId 
+      } as any);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -96,9 +163,26 @@ export default function DocumentsList() {
 
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold">Documentos</h1>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                Documentos
+                {currentFolder && (
+                  <Badge variant="outline" className="font-normal flex items-center gap-1">
+                    <Folder className="w-3 h-3" />
+                    {currentFolder.name}
+                    <button 
+                      onClick={clearFolderFilter}
+                      className="ml-1 hover:text-destructive"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                )}
+              </h1>
               <p className="text-muted-foreground">
-                Gerencie todos os seus documentos para assinatura
+                {currentFolder 
+                  ? `Documentos na pasta "${currentFolder.name}"`
+                  : 'Gerencie todos os seus documentos para assinatura'
+                }
               </p>
             </div>
             <Button onClick={() => navigate('/documents/create')}>
@@ -106,6 +190,42 @@ export default function DocumentsList() {
               Novo Documento
             </Button>
           </div>
+
+          {/* Folder Quick Access Bar */}
+          {folders.length > 0 && (
+            <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2">
+              <span className="text-sm text-muted-foreground flex-shrink-0">
+                <FolderInput className="w-4 h-4 inline mr-1" />
+                Arraste documentos para:
+              </span>
+              <div className="flex gap-2">
+                {folders.map((folder: FolderListItem) => (
+                  <div
+                    key={folder.id}
+                    onDragOver={(e) => handleDragOver(e, folder.id)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, folder.id)}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 border-dashed transition-all cursor-pointer",
+                      dragOverFolderId === folder.id
+                        ? "border-primary bg-primary/10 scale-105"
+                        : "border-muted-foreground/30 hover:border-primary/50",
+                      folderFilter === String(folder.id) && "bg-muted"
+                    )}
+                    onClick={() => handleFolderChange(String(folder.id))}
+                  >
+                    <Folder className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm whitespace-nowrap">{folder.name}</span>
+                    {folder.documentCount !== undefined && (
+                      <span className="text-xs text-muted-foreground">
+                        ({folder.documentCount})
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Filtros */}
           <Card className="mb-6">
@@ -134,15 +254,24 @@ export default function DocumentsList() {
                     <SelectItem value="EXPIRED">Expirado</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={folderFilter} onValueChange={setFolderFilter}>
-                  <SelectTrigger className="w-full md:w-[180px]">
+                <Select value={folderFilter} onValueChange={handleFolderChange}>
+                  <SelectTrigger className="w-full md:w-[200px]">
+                    <Folder className="w-4 h-4 mr-2" />
                     <SelectValue placeholder="Pasta" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todas as Pastas</SelectItem>
-                    {folders.map((folder: any) => (
+                    {folders.map((folder: FolderListItem) => (
                       <SelectItem key={folder.id} value={String(folder.id)}>
-                        {folder.name}
+                        <span className="flex items-center gap-2">
+                          <Folder className="w-3 h-3" />
+                          {folder.name}
+                          {folder.documentCount !== undefined && (
+                            <span className="text-muted-foreground">
+                              ({folder.documentCount})
+                            </span>
+                          )}
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -192,7 +321,11 @@ export default function DocumentsList() {
           ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filteredDocuments.map((doc: any) => (
-                <DocumentCard key={doc.id} doc={doc} />
+                <DocumentCard 
+                  key={doc.id} 
+                  doc={doc} 
+                  draggable={folders.length > 0}
+                />
               ))}
             </div>
           ) : (
@@ -202,45 +335,67 @@ export default function DocumentsList() {
                   <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Pasta</TableHead>
                     <TableHead>Signatários</TableHead>
                     <TableHead>Data</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredDocuments.map((doc: any) => (
-                    <TableRow key={doc.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-muted-foreground" />
-                          {doc.name || `Documento #${doc.id}`}
-                        </div>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(doc.status)}</TableCell>
-                      <TableCell>
-                        {doc.signedCount || 0}/{doc.signerCount || 0}
-                      </TableCell>
-                      <TableCell>{formatDate(doc.createdAt)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => navigate(`/documents/${doc.id}`)}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title="Baixar documento"
-                          >
-                            <Download className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {filteredDocuments.map((doc: any) => {
+                    const docFolder = folders.find((f: FolderListItem) => f.id === doc.folderId);
+                    return (
+                      <TableRow 
+                        key={doc.id}
+                        draggable={folders.length > 0}
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('documentId', String(doc.id));
+                          e.dataTransfer.effectAllowed = 'move';
+                        }}
+                        className={cn(folders.length > 0 && "cursor-grab active:cursor-grabbing")}
+                      >
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-muted-foreground" />
+                            {doc.name || `Documento #${doc.id}`}
+                          </div>
+                        </TableCell>
+                        <TableCell>{getStatusBadge(doc.status)}</TableCell>
+                        <TableCell>
+                          {docFolder ? (
+                            <Badge variant="outline" className="flex items-center gap-1 w-fit">
+                              <Folder className="w-3 h-3" />
+                              {docFolder.name}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {doc.signedCount || 0}/{doc.signerCount || 0}
+                        </TableCell>
+                        <TableCell>{formatDate(doc.createdAt)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => navigate(`/documents/${doc.id}`)}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Baixar documento"
+                            >
+                              <Download className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </Card>
