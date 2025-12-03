@@ -16,8 +16,10 @@ import {
 } from "@/components/ui/select";
 import { UploadBox } from "@/components/UploadBox";
 import { Plus, Trash2, Upload, FileText, Loader2 } from "lucide-react";
-import { trpc } from "@/lib/trpc";
+import { trpc, isAuthenticated } from "@/lib/trpc";
 import { toast } from "sonner";
+import { useRequireAuth } from "@/hooks/useAuth";
+import { Loading } from "@/components/Loading";
 
 type SignerForm = {
   name: string;
@@ -32,10 +34,14 @@ type SignerForm = {
 
 export default function DocumentCreatePage() {
   const navigate = useNavigate();
+  const { isLoading: authLoading } = useRequireAuth();
+  const hasToken = isAuthenticated();
 
-  const foldersQuery = trpc.mdsign.folders.list.useQuery({ parentId: null } as any);
+  const foldersQuery = trpc.mdsign.folders.list.useQuery({ parentId: null } as any, { enabled: hasToken });
   const uploadMutation = trpc.mdsign.documents.upload.useMutation();
   const createMutation = trpc.mdsign.documents.create.useMutation();
+  
+  if (authLoading) return <Loading fullScreen />;
 
   const [fileName, setFileName] = useState("");
   const [uploadId, setUploadId] = useState<string | null>(null);

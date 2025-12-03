@@ -5,16 +5,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Check, ArrowRight, Loader2 } from "lucide-react";
-import { trpc } from "@/lib/trpc";
+import { trpc, isAuthenticated } from "@/lib/trpc";
 import { Loading } from "@/components/Loading";
 import { ManageSubscriptionButton } from "@/components/ManageSubscriptionButton";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useRequireAuth } from "@/hooks/useAuth";
 
 export default function BillingPage() {
   const navigate = useNavigate();
-  const statsQuery = trpc.mdsign.stats.useQuery(undefined as any);
-  const plansQuery = trpc.plans.useQuery(undefined as any);
+  const { isLoading: authLoading } = useRequireAuth();
+  const hasToken = isAuthenticated();
+  
+  const statsQuery = trpc.mdsign.stats.useQuery(undefined as any, { enabled: hasToken });
+  const plansQuery = trpc.plans.useQuery(undefined as any, { enabled: hasToken });
   const checkoutMutation = trpc.billing.createCheckoutSession.useMutation({
     onSuccess: (data: any) => {
       if (data?.url) {
@@ -75,7 +79,7 @@ export default function BillingPage() {
             <p className="text-muted-foreground">Gerencie sua assinatura e veja seu consumo</p>
           </div>
 
-          {statsQuery.isLoading ? (
+          {(authLoading || statsQuery.isLoading) ? (
             <Loading />
           ) : (
             <div className="grid gap-6">

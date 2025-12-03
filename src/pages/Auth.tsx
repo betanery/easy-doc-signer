@@ -6,9 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Logo } from "@/components/Logo";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
-import { trpc, setAuthToken } from "@/lib/trpc";
+import { trpc, setAuthToken, isAuthenticated } from "@/lib/trpc";
 import { toast } from "sonner";
 
 // Validation schemas
@@ -41,13 +41,22 @@ const Auth = () => {
   const [planId, setPlanId] = useState<number>(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Redirecionar se já estiver autenticado
+  useEffect(() => {
+    if (isAuthenticated()) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [navigate]);
+
   // tRPC mutations
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: (res: any) => {
       console.log("[Auth] Login success:", res);
-      setAuthToken(res.token);
-      toast.success("Login realizado com sucesso!");
-      navigate("/dashboard");
+      if (res.token) {
+        setAuthToken(res.token);
+        toast.success("Login realizado com sucesso!");
+        navigate("/dashboard");
+      }
     },
     onError: (error: any) => {
       console.log("[Auth] Login error:", error);
@@ -58,9 +67,11 @@ const Auth = () => {
   const signupMutation = trpc.auth.signup.useMutation({
     onSuccess: (res: any) => {
       console.log("[Auth] Signup success:", res);
-      setAuthToken(res.token);
-      toast.success("Conta criada com sucesso!");
-      navigate("/dashboard");
+      if (res.token) {
+        setAuthToken(res.token);
+        toast.success("Conta criada com sucesso!");
+        navigate("/dashboard");
+      }
     },
     onError: (error: any) => {
       console.log("[Auth] Signup error:", error);
@@ -68,9 +79,11 @@ const Auth = () => {
     },
   });
   
+  // NÃO buscar planos automaticamente - só quando necessário
   const plansQuery = trpc.plans.useQuery(undefined, {
     retry: false,
     refetchOnWindowFocus: false,
+    staleTime: Infinity, // Cache indefinido para planos
   });
 
   // Extract plans from tRPC response

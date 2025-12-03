@@ -32,22 +32,28 @@ import {
   LayoutGrid,
   LayoutList
 } from 'lucide-react';
-import { trpc } from '@/lib/trpc';
+import { trpc, isAuthenticated } from '@/lib/trpc';
 import { Loading } from '@/components/Loading';
+import { useRequireAuth } from '@/hooks/useAuth';
 
 export default function DocumentsList() {
   const navigate = useNavigate();
+  const { isLoading: authLoading } = useRequireAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [folderFilter, setFolderFilter] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
+  const hasToken = isAuthenticated();
+  
   const documentsQuery = trpc.mdsign.documents.list.useQuery({
     status: statusFilter !== 'all' ? statusFilter : undefined,
     folderId: folderFilter !== 'all' ? Number(folderFilter) : undefined,
-  } as any);
+  } as any, { enabled: hasToken });
 
-  const foldersQuery = trpc.mdsign.folders.list.useQuery({ parentId: null } as any);
+  const foldersQuery = trpc.mdsign.folders.list.useQuery({ parentId: null } as any, { enabled: hasToken });
+  
+  if (authLoading) return <Loading fullScreen />;
 
   const documents = (documentsQuery.data as any)?.documents || [];
   const folders = (foldersQuery.data as any)?.folders || [];

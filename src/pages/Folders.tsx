@@ -13,16 +13,20 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Folder, Plus, Trash2, Edit2, FileText } from "lucide-react";
-import { trpc } from "@/lib/trpc";
+import { trpc, isAuthenticated } from "@/lib/trpc";
 import { Loading } from "@/components/Loading";
 import { toast } from "sonner";
+import { useRequireAuth } from "@/hooks/useAuth";
 
 export default function FoldersPage() {
+  const { isLoading: authLoading } = useRequireAuth();
+  const hasToken = isAuthenticated();
+  
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderColor, setNewFolderColor] = useState("#8B5CF6");
 
-  const foldersQuery = trpc.mdsign.folders.list.useQuery({ includeDocumentCount: true } as any);
+  const foldersQuery = trpc.mdsign.folders.list.useQuery({ includeDocumentCount: true } as any, { enabled: hasToken });
   const createFolder = trpc.mdsign.folders.create.useMutation({
     onSuccess: () => {
       toast.success("Pasta criada com sucesso!");
@@ -116,7 +120,7 @@ export default function FoldersPage() {
             </Dialog>
           </div>
 
-          {foldersQuery.isLoading ? (
+          {(authLoading || foldersQuery.isLoading) ? (
             <Loading />
           ) : (foldersQuery.data as any)?.folders?.length === 0 ? (
             <Card className="border-dashed">

@@ -1,41 +1,35 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { trpc, getAuthToken } from "@/lib/trpc";
+import { trpc, isAuthenticated } from "@/lib/trpc";
 import { ArrowLeft, Download, Clock, CheckCircle2, XCircle, Send, ExternalLink } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { useRequireAuth } from "@/hooks/useAuth";
+import { Loading } from "@/components/Loading";
 
 const DocumentDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { isLoading: authLoading } = useRequireAuth();
+  const hasToken = isAuthenticated();
+  
   const [document, setDocument] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
 
-  // tRPC queries and mutations
+  // tRPC queries and mutations - só executa com token
   const documentQuery = trpc.mdsign.documents.get.useQuery(
     { documentId: id || '' } as any,
-    { enabled: !!id }
+    { enabled: !!id && hasToken }
   );
   const actionUrlMutation = trpc.mdsign.documents.createActionUrl.useMutation();
   const reminderMutation = trpc.mdsign.documents.sendReminder.useMutation();
   const downloadMutation = trpc.mdsign.documents.download.useMutation();
 
   useEffect(() => {
-    // Check auth
-    const token = getAuthToken();
-    if (!token) {
-      navigate('/auth');
-      return;
-    }
-  }, [navigate]);
-
-  useEffect(() => {
     if (documentQuery.data) {
       setDocument(documentQuery.data);
-      setLoading(false);
     }
     if (documentQuery.error) {
       toast.error("Documento não encontrado");
@@ -122,12 +116,8 @@ const DocumentDetail = () => {
     }
   };
 
-  if (loading || documentQuery.isLoading || !document) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
+  if (authLoading || documentQuery.isLoading || !document) {
+    return <Loading fullScreen />;
   }
 
   const signers = document.signers || document.flowActions || [];
