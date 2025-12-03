@@ -5,9 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { Logo } from '@/components/Logo';
 import { ArrowLeft, Check, Crown, Leaf, TreeDeciduous, Trees, Flower2, TreePine, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useTRPCBilling } from '@/hooks/useTRPC';
+import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
-import type { PlanName } from '@/lib/trpc/types';
+import type { PlanName } from '@/types/mdsign-app-router';
 
 const plans = [
   {
@@ -103,8 +103,7 @@ const plans = [
 
 export default function Plans() {
   const navigate = useNavigate();
-  // CORRECTED: Using createCheckoutSession instead of createCheckout
-  const { createCheckoutSession } = useTRPCBilling();
+  const checkoutMutation = trpc.billing.createCheckoutSession.useMutation();
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
 
   const handleSelectPlan = async (plan: typeof plans[0]) => {
@@ -123,18 +122,27 @@ export default function Plans() {
     // Paid plans - create Stripe checkout
     try {
       setLoadingPlanId(plan.id);
-      // CORRECTED: Using planName instead of planId
-      const checkoutUrl = await createCheckoutSession(plan.planName, 'monthly');
-      
-      if (checkoutUrl) {
-        window.location.href = checkoutUrl;
-      } else {
-        toast.error('Erro ao criar sessão de checkout');
-      }
+      (checkoutMutation.mutate as any)(
+        { planName: plan.planName, billingInterval: 'monthly' },
+        {
+          onSuccess: (data: any) => {
+            if (data?.url) {
+              window.location.href = data.url;
+            } else {
+              toast.error('Erro ao criar sessão de checkout');
+            }
+            setLoadingPlanId(null);
+          },
+          onError: (error: any) => {
+            console.error('Checkout error:', error);
+            toast.error('Erro ao processar pagamento. Tente novamente.');
+            setLoadingPlanId(null);
+          },
+        }
+      );
     } catch (error) {
       console.error('Checkout error:', error);
       toast.error('Erro ao processar pagamento. Tente novamente.');
-    } finally {
       setLoadingPlanId(null);
     }
   };

@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CreditCard, Check, ArrowRight, Loader2 } from "lucide-react";
-import { trpc } from "@/lib/trpc/react";
+import { Check, ArrowRight, Loader2 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 import { Loading } from "@/components/Loading";
 import { ManageSubscriptionButton } from "@/components/ManageSubscriptionButton";
 import { useNavigate } from "react-router-dom";
@@ -15,7 +15,7 @@ export default function BillingPage() {
   const navigate = useNavigate();
   const statsQuery = trpc.mdsign.stats.useQuery(undefined as any);
   const plansQuery = trpc.plans.useQuery(undefined as any);
-  const checkoutMutation = trpc.billing.createCheckout.useMutation({
+  const checkoutMutation = trpc.billing.createCheckoutSession.useMutation({
     onSuccess: (data: any) => {
       if (data?.url) {
         window.location.href = data.url;
@@ -26,8 +26,8 @@ export default function BillingPage() {
     },
   });
 
-  const handleUpgrade = (planId: number) => {
-    (checkoutMutation.mutate as any)({ planId });
+  const handleUpgrade = (planName: string) => {
+    (checkoutMutation.mutate as any)({ planName, billingInterval: 'monthly' });
   };
 
   const stats = statsQuery.data as any;
@@ -167,7 +167,7 @@ export default function BillingPage() {
                           className="w-full"
                           variant={currentPlan?.id === plan.id ? "outline" : "default"}
                           disabled={currentPlan?.id === plan.id || checkoutMutation.isPending}
-                          onClick={() => handleUpgrade(plan.id)}
+                          onClick={() => handleUpgrade(plan.name)}
                         >
                           {checkoutMutation.isPending ? (
                             <Loader2 className="w-4 h-4 animate-spin" />

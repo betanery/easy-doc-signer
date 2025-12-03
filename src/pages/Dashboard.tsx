@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Upload, FolderOpen, Building2, TrendingUp, Clock, CheckCircle2, AlertCircle } from "lucide-react";
-import { trpc } from "@/lib/trpc/react";
+import { FileText, Upload, FolderOpen, TrendingUp, Clock, CheckCircle2 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 import { Loading } from "@/components/Loading";
 import { ManageSubscriptionButton } from "@/components/ManageSubscriptionButton";
 import { Progress } from "@/components/ui/progress";

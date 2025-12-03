@@ -1,20 +1,12 @@
 import { useState, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { 
-  trpc, 
-  setAuthToken, 
-  removeAuthToken 
-} from '@/lib/trpc/client';
+import { trpc, setAuthToken, removeAuthToken, getAuthToken } from '@/lib/trpc';
 import type {
   SignupInput,
   LoginInput,
-  AuthUser,
-  Document,
-  DocumentSigner,
-  Plan,
-  Stats,
+  MeOutput,
   PlanName,
-} from '@/lib/trpc/types';
+} from '@/types/mdsign-app-router';
 
 interface TRPCError {
   status?: number;
@@ -22,9 +14,10 @@ interface TRPCError {
   message?: string;
 }
 
+// ========== AUTH ==========
 export const useTRPCAuth = () => {
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<MeOutput | null>(null);
 
   const handleError = useCallback((error: TRPCError, defaultMessage: string) => {
     console.error(defaultMessage, error);
@@ -38,14 +31,14 @@ export const useTRPCAuth = () => {
   const signup = useCallback(async (input: SignupInput): Promise<boolean> => {
     try {
       setLoading(true);
-      const response = await trpc.auth.signup(input);
-      setAuthToken(response.token);
-      setUser(response.user);
-      toast({
-        title: 'Conta criada',
-        description: 'Bem-vindo ao MDSign!',
-      });
-      return true;
+      const result = await trpc.auth.signup(input);
+      if (result.token) {
+        setAuthToken(result.token);
+        setUser(result.user);
+        toast({ title: 'Conta criada', description: 'Bem-vindo ao MDSign!' });
+        return true;
+      }
+      return false;
     } catch (error) {
       handleError(error as TRPCError, 'Erro ao criar conta');
       return false;
@@ -57,14 +50,14 @@ export const useTRPCAuth = () => {
   const login = useCallback(async (input: LoginInput): Promise<boolean> => {
     try {
       setLoading(true);
-      const response = await trpc.auth.login(input);
-      setAuthToken(response.token);
-      setUser(response.user);
-      toast({
-        title: 'Login realizado',
-        description: 'Bem-vindo de volta!',
-      });
-      return true;
+      const result = await trpc.auth.login(input);
+      if (result.token) {
+        setAuthToken(result.token);
+        setUser(result.user);
+        toast({ title: 'Login realizado', description: 'Bem-vindo de volta!' });
+        return true;
+      }
+      return false;
     } catch (error) {
       handleError(error as TRPCError, 'Erro ao fazer login');
       return false;
@@ -76,11 +69,17 @@ export const useTRPCAuth = () => {
   const logout = useCallback(() => {
     removeAuthToken();
     setUser(null);
+    window.location.href = '/auth';
   }, []);
 
-  const fetchUser = useCallback(async (): Promise<AuthUser | null> => {
+  const fetchUser = useCallback(async (): Promise<MeOutput | null> => {
     try {
       setLoading(true);
+      const token = getAuthToken();
+      if (!token) {
+        setUser(null);
+        return null;
+      }
       const userData = await trpc.auth.me();
       setUser(userData);
       return userData;
@@ -96,6 +95,7 @@ export const useTRPCAuth = () => {
   return { loading, user, signup, login, logout, fetchUser };
 };
 
+// ========== DOCUMENTS ==========
 export const useTRPCDocuments = () => {
   const [loading, setLoading] = useState(false);
 
@@ -117,25 +117,23 @@ export const useTRPCDocuments = () => {
     }
   }, []);
 
-  // CORRECTED: Upload with contentType and fileBase64
   const upload = useCallback(async (file: File): Promise<string | null> => {
     try {
       setLoading(true);
-      const fileBase64 = await new Promise<string>((resolve) => {
+      const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64 = (reader.result as string).split(',')[1];
-          resolve(base64);
-        };
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
         reader.readAsDataURL(file);
       });
 
-      const response = await trpc.documents.upload({
+      const result = await trpc.documents.upload({
         fileName: file.name,
-        contentType: file.type, // CORRECTED: Added contentType
-        fileBase64, // CORRECTED: Renamed from fileContent
+        fileContent: base64.split(',')[1],
+        mimeType: file.type,
       });
-      return response.uploadId;
+
+      return result.uploadId;
     } catch (error) {
       handleError(error as TRPCError, 'Erro ao fazer upload do arquivo');
       return null;
@@ -147,24 +145,21 @@ export const useTRPCDocuments = () => {
   const create = useCallback(async (
     uploadId: string,
     name: string,
-    signers: DocumentSigner[],
+    signers: any[],
     folderId?: number,
     expirationDate?: Date
-  ): Promise<Document | null> => {
+  ): Promise<any | null> => {
     try {
       setLoading(true);
-      const document = await trpc.documents.create({
+      const result = await trpc.documents.create({
         uploadId,
         name,
         signers,
         folderId,
         expirationDate,
       });
-      toast({
-        title: 'Documento criado',
-        description: 'Documento enviado para assinatura com sucesso!',
-      });
-      return document;
+      toast({ title: 'Sucesso', description: 'Documento criado com sucesso!' });
+      return result;
     } catch (error) {
       handleError(error as TRPCError, 'Erro ao criar documento');
       return null;
@@ -173,11 +168,11 @@ export const useTRPCDocuments = () => {
     }
   }, [handleError]);
 
-  const list = useCallback(async (status?: string, folderId?: number): Promise<Document[]> => {
+  const list = useCallback(async (status?: string, folderId?: number): Promise<any[]> => {
     try {
       setLoading(true);
-      const documents = await trpc.documents.list({ status, folderId });
-      return documents;
+      const result = await trpc.documents.list({ status, folderId });
+      return result;
     } catch (error) {
       handleError(error as TRPCError, 'Erro ao listar documentos');
       return [];
@@ -186,12 +181,11 @@ export const useTRPCDocuments = () => {
     }
   }, [handleError]);
 
-  // CORRECTED: get with documentId as string (was getById with number)
-  const get = useCallback(async (documentId: string): Promise<Document | null> => {
+  const get = useCallback(async (documentId: string): Promise<any | null> => {
     try {
       setLoading(true);
-      const document = await trpc.documents.get(documentId);
-      return document;
+      const result = await trpc.documents.get(documentId);
+      return result;
     } catch (error) {
       handleError(error as TRPCError, 'Erro ao buscar documento');
       return null;
@@ -200,51 +194,51 @@ export const useTRPCDocuments = () => {
     }
   }, [handleError]);
 
-  // CORRECTED: createActionUrl (was generateActionUrl)
   const createActionUrl = useCallback(async (documentId: string, flowActionId: string): Promise<string | null> => {
     try {
-      const response = await trpc.documents.createActionUrl({ documentId, flowActionId });
-      return response.url;
+      setLoading(true);
+      const result = await trpc.documents.createActionUrl({ documentId, flowActionId });
+      return result.url;
     } catch (error) {
       handleError(error as TRPCError, 'Erro ao gerar URL de assinatura');
       return null;
+    } finally {
+      setLoading(false);
     }
   }, [handleError]);
 
-  // CORRECTED: documentId is now string
   const sendReminder = useCallback(async (documentId: string, flowActionId: string): Promise<boolean> => {
     try {
-      await trpc.documents.sendReminder({ documentId, flowActionId });
-      toast({
-        title: 'Lembrete enviado',
-        description: 'O signatário foi notificado.',
-      });
-      return true;
+      setLoading(true);
+      const result = await trpc.documents.sendReminder({ documentId, flowActionId });
+      toast({ title: 'Sucesso', description: 'Lembrete enviado!' });
+      return result.success;
     } catch (error) {
       handleError(error as TRPCError, 'Erro ao enviar lembrete');
       return false;
+    } finally {
+      setLoading(false);
     }
   }, [handleError]);
 
-  // CORRECTED: documentId is now string
   const download = useCallback(async (documentId: string): Promise<void> => {
     try {
-      const response = await trpc.documents.download(documentId);
-      window.open(response.downloadUrl, '_blank');
-      toast({
-        title: 'Download iniciado',
-        description: 'O download do documento foi iniciado.',
-      });
+      setLoading(true);
+      const result = await trpc.documents.download(documentId);
+      if (result.downloadUrl) {
+        window.open(result.downloadUrl, '_blank');
+      }
     } catch (error) {
       handleError(error as TRPCError, 'Erro ao baixar documento');
+    } finally {
+      setLoading(false);
     }
   }, [handleError]);
 
   return { loading, upload, create, list, get, createActionUrl, sendReminder, download };
 };
 
-// REMOVED: useTRPCFolders - Not available in backend
-// Stub for backward compatibility
+// ========== FOLDERS (stub - not available in backend) ==========
 export const useTRPCFolders = () => {
   return {
     loading: false,
@@ -256,6 +250,7 @@ export const useTRPCFolders = () => {
   };
 };
 
+// ========== STATS ==========
 export const useTRPCStats = () => {
   const [loading, setLoading] = useState(false);
 
@@ -268,11 +263,11 @@ export const useTRPCStats = () => {
     });
   }, []);
 
-  const getStats = useCallback(async (): Promise<Stats | null> => {
+  const getStats = useCallback(async (): Promise<any | null> => {
     try {
       setLoading(true);
-      const stats = await trpc.stats.get();
-      return stats;
+      const result = await trpc.stats.get();
+      return result;
     } catch (error) {
       handleError(error as TRPCError, 'Erro ao buscar estatísticas');
       return null;
@@ -281,11 +276,11 @@ export const useTRPCStats = () => {
     }
   }, [handleError]);
 
-  const getPlans = useCallback(async (): Promise<Plan[]> => {
+  const getPlans = useCallback(async (): Promise<any[]> => {
     try {
       setLoading(true);
-      const plans = await trpc.plans.list();
-      return plans;
+      const result = await trpc.plans.list();
+      return result;
     } catch (error) {
       handleError(error as TRPCError, 'Erro ao buscar planos');
       return [];
@@ -297,12 +292,9 @@ export const useTRPCStats = () => {
   const upgradePlan = useCallback(async (newPlanId: number): Promise<boolean> => {
     try {
       setLoading(true);
-      await trpc.stats.upgradePlan({ newPlanId });
-      toast({
-        title: 'Plano atualizado',
-        description: 'Seu plano foi atualizado com sucesso!',
-      });
-      return true;
+      const result = await trpc.stats.upgradePlan({ newPlanId });
+      toast({ title: 'Sucesso', description: 'Plano atualizado!' });
+      return result.success;
     } catch (error) {
       handleError(error as TRPCError, 'Erro ao atualizar plano');
       return false;
@@ -314,6 +306,7 @@ export const useTRPCStats = () => {
   return { loading, getStats, getPlans, upgradePlan };
 };
 
+// ========== BILLING ==========
 export const useTRPCBilling = () => {
   const [loading, setLoading] = useState(false);
 
@@ -326,28 +319,26 @@ export const useTRPCBilling = () => {
     });
   }, []);
 
-  // CORRECTED: createCheckoutSession with planName and billingInterval
   const createCheckoutSession = useCallback(async (planName: PlanName, billingInterval: 'monthly' | 'yearly' = 'monthly'): Promise<string | null> => {
     try {
       setLoading(true);
-      const response = await trpc.billing.createCheckoutSession({ planName, billingInterval });
-      return response.url;
+      const result = await trpc.billing.createCheckoutSession({ planName, billingInterval });
+      return result.url;
     } catch (error) {
-      handleError(error as TRPCError, 'Erro ao criar checkout');
+      handleError(error as TRPCError, 'Erro ao criar sessão de checkout');
       return null;
     } finally {
       setLoading(false);
     }
   }, [handleError]);
 
-  // CORRECTED: createPortalSession (was getCustomerPortal)
   const createPortalSession = useCallback(async (): Promise<string | null> => {
     try {
       setLoading(true);
-      const response = await trpc.billing.createPortalSession();
-      return response.url;
+      const result = await trpc.billing.createPortalSession();
+      return result.url;
     } catch (error) {
-      handleError(error as TRPCError, 'Erro ao acessar portal');
+      handleError(error as TRPCError, 'Erro ao criar sessão do portal');
       return null;
     } finally {
       setLoading(false);

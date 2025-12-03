@@ -6,9 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Logo } from "@/components/Logo";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { z } from "zod";
-import { trpc, setAuthToken } from "@/lib/trpc/react";
+import { trpc, setAuthToken } from "@/lib/trpc";
 import { toast } from "sonner";
 
 // Validation schemas
@@ -41,11 +41,10 @@ const Auth = () => {
   const [planId, setPlanId] = useState<number>(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // tRPC mutations with callbacks defined in useMutation (following example pattern)
+  // tRPC mutations
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: (res: any) => {
       console.log("[Auth] Login success:", res);
-      console.log("[Auth] Setting token:", res.token ? `${res.token.substring(0, 30)}...` : "NO TOKEN IN RESPONSE");
       setAuthToken(res.token);
       toast.success("Login realizado com sucesso!");
       navigate("/dashboard");
@@ -74,7 +73,7 @@ const Auth = () => {
     refetchOnWindowFocus: false,
   });
 
-  // Extract plans from tRPC response (handles nested json structure)
+  // Extract plans from tRPC response
   const fallbackPlans = [
     { id: 1, name: "Cedro (Grátis)", priceBRL: "0.00" },
     { id: 2, name: "Jacarandá", priceBRL: "39.90" },
@@ -84,7 +83,6 @@ const Auth = () => {
     { id: 6, name: "Mogno", priceBRL: "0.00" },
   ];
   
-  // Handle nested response structure from tRPC with superjson
   const plansData = plansQuery.data;
   const plans = Array.isArray(plansData) 
     ? plansData 
@@ -108,7 +106,6 @@ const Auth = () => {
       return;
     }
 
-    console.log("[Auth] Login input:", { email: email.trim(), password });
     loginMutation.mutate({ email: email.trim(), password });
   };
 
@@ -134,15 +131,6 @@ const Auth = () => {
       setErrors(fieldErrors);
       return;
     }
-
-    console.log("[Auth] Signup input:", {
-      email: signupEmail.trim(),
-      password: signupPassword,
-      name: signupName.trim(),
-      tenantName: tenantName.trim(),
-      cnpj: cnpj.trim() || undefined,
-      planId,
-    });
     
     signupMutation.mutate({
       email: signupEmail.trim(),

@@ -1,10 +1,10 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar } from '@/components/Sidebar';
 import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -32,7 +32,7 @@ import {
   LayoutGrid,
   LayoutList
 } from 'lucide-react';
-import { trpc } from '@/lib/trpc/react';
+import { trpc } from '@/lib/trpc';
 import { Loading } from '@/components/Loading';
 
 export default function DocumentsList() {
