@@ -84,7 +84,7 @@ export function Sidebar() {
       {/* Bottom section */}
       <div className="px-2 pb-4 space-y-1">
         <Link
-          to="/settings"
+          to="/settings/lacuna"
           className={cn(
             "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-purple-100/80 hover:bg-purple-700/40 hover:text-white transition-colors",
           )}

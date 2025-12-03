@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { trpc, isAuthenticated } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sidebar } from '@/components/Sidebar';
 import { Navbar } from '@/components/Navbar';
 import PremiumBlockModal from '@/components/PremiumBlockModal';
+import { LacunaBanner } from '@/components/LacunaBanner';
+import { useLacunaStatus } from '@/hooks/useLacunaStatus';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import {
   FileText,
@@ -18,6 +21,8 @@ import {
   Trash2,
   Upload,
   Loader2,
+  AlertTriangle,
+  Settings,
 } from 'lucide-react';
 import { useRequireAuth } from '@/hooks/useAuth';
 import { Loading } from '@/components/Loading';
@@ -39,6 +44,7 @@ export default function DocumentUpload() {
   const navigate = useNavigate();
   const { isLoading: authLoading } = useRequireAuth();
   const hasToken = isAuthenticated();
+  const { isConfigured: lacunaConfigured, isLoading: lacunaLoading } = useLacunaStatus();
   
   const [file, setFile] = useState<File | null>(null);
   const [documentName, setDocumentName] = useState('');
@@ -199,6 +205,7 @@ export default function DocumentUpload() {
     <div className="min-h-screen bg-background flex">
       <Sidebar />
       <div className="flex-1 flex flex-col">
+        <LacunaBanner />
         <Navbar />
         <main className="flex-1 p-6 overflow-auto">
           <div className="max-w-4xl mx-auto space-y-6">
@@ -206,6 +213,23 @@ export default function DocumentUpload() {
               <h1 className="text-3xl font-bold text-foreground">Upload de Documento</h1>
               <p className="text-muted-foreground mt-1">Faça upload de um PDF e configure os signatários</p>
             </div>
+
+            {/* Lacuna not configured alert */}
+            {!lacunaLoading && !lacunaConfigured && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Configuração necessária</AlertTitle>
+                <AlertDescription className="flex items-center justify-between">
+                  <span>Configure suas credenciais da Lacuna para ativar o upload de documentos.</span>
+                  <Link to="/settings/lacuna">
+                    <Button variant="outline" size="sm" className="gap-2 ml-4">
+                      <Settings className="h-4 w-4" />
+                      Configurar
+                    </Button>
+                  </Link>
+                </AlertDescription>
+              </Alert>
+            )}
 
             <Card>
               <CardHeader>
@@ -385,7 +409,7 @@ export default function DocumentUpload() {
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={loading || !file}
+                disabled={loading || !file || !lacunaConfigured}
                 className="bg-gradient-to-r from-primary to-primary-glow"
               >
                 {loading ? (
