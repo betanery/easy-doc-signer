@@ -17,6 +17,7 @@ import CheckoutSuccess from "./pages/CheckoutSuccess";
 import CheckoutCancel from "./pages/CheckoutCancel";
 import Folders from "./pages/Folders";
 import Organizations from "./pages/Organizations";
+import OrganizationDetail from "./pages/OrganizationDetail";
 import Billing from "./pages/Billing";
 import LacunaSettings from "./pages/LacunaSettings";
 import NotFound from "./pages/NotFound";
@@ -40,6 +41,7 @@ const App = () => (
           <Route path="/planos" element={<Plans />} />
           <Route path="/folders" element={<Folders />} />
           <Route path="/organizations" element={<Organizations />} />
+          <Route path="/organizations/:id" element={<OrganizationDetail />} />
           <Route path="/billing" element={<Billing />} />
           <Route path="/settings/lacuna" element={<LacunaSettings />} />
           <Route path="/checkout/success" element={<CheckoutSuccess />} />

@@ -27,7 +27,7 @@ const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/documents", label: "Documentos", icon: FileText },
   { href: "/folders", label: "Gerenciar Pastas", icon: Folder },
-  { href: "/organizations", label: "Organizações", icon: Building2 },
+  { href: "/organizations", label: "Empresas", icon: Building2 },
   { href: "/billing", label: "Planos e Cobrança", icon: CreditCard },
 ];
 
