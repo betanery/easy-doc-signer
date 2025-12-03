@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
@@ -14,12 +14,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { UploadBox } from "@/components/UploadBox";
-import { Plus, Trash2, Upload, FileText, Loader2 } from "lucide-react";
+import { Plus, Trash2, Upload, FileText, Loader2, AlertTriangle, Settings } from "lucide-react";
 import { trpc, isAuthenticated } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useRequireAuth } from "@/hooks/useAuth";
 import { Loading } from "@/components/Loading";
+import { LacunaBanner } from "@/components/LacunaBanner";
+import { useLacunaStatus } from "@/hooks/useLacunaStatus";
 
 type SignerForm = {
   name: string;
@@ -36,6 +39,7 @@ export default function DocumentCreatePage() {
   const navigate = useNavigate();
   const { isLoading: authLoading } = useRequireAuth();
   const hasToken = isAuthenticated();
+  const { isConfigured: lacunaConfigured, isLoading: lacunaLoading } = useLacunaStatus();
 
   const foldersQuery = trpc.mdsign.folders.list.useQuery({ parentId: null } as any, { enabled: hasToken });
   const uploadMutation = trpc.mdsign.documents.upload.useMutation();
@@ -152,10 +156,28 @@ export default function DocumentCreatePage() {
     <div className="flex min-h-screen bg-background">
       <Sidebar />
       <div className="flex-1 flex flex-col">
+        <LacunaBanner />
         <div className="p-8">
           <Navbar />
 
           <h1 className="text-2xl font-bold mb-6">Novo documento</h1>
+
+          {/* Lacuna not configured alert */}
+          {!lacunaLoading && !lacunaConfigured && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Configuração necessária</AlertTitle>
+              <AlertDescription className="flex items-center justify-between">
+                <span>Configure suas credenciais da Lacuna para criar documentos.</span>
+                <Link to="/settings/lacuna">
+                  <Button variant="outline" size="sm" className="gap-2 ml-4">
+                    <Settings className="h-4 w-4" />
+                    Configurar
+                  </Button>
+                </Link>
+              </AlertDescription>
+            </Alert>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Coluna 1: Arquivo e configurações */}
@@ -237,7 +259,7 @@ export default function DocumentCreatePage() {
                 className="w-full"
                 size="lg"
                 onClick={handleSubmit}
-                disabled={createMutation.isPending || !uploadId}
+                disabled={createMutation.isPending || !uploadId || !lacunaConfigured}
               >
                 {createMutation.isPending ? (
                   <>

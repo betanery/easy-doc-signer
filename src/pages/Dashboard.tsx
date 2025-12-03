@@ -9,6 +9,7 @@ import { Loading } from "@/components/Loading";
 import { ManageSubscriptionButton } from "@/components/ManageSubscriptionButton";
 import { Progress } from "@/components/ui/progress";
 import { useRequireAuth } from "@/hooks/useAuth";
+import { LacunaBanner } from "@/components/LacunaBanner";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -36,6 +37,7 @@ export default function Dashboard() {
     <div className="flex min-h-screen bg-background">
       <Sidebar />
       <div className="flex-1 flex flex-col">
+        <LacunaBanner />
         <div className="p-8">
           <Navbar userName={(user as any)?.name} userEmail={(user as any)?.email} />
 

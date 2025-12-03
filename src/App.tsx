@@ -18,6 +18,7 @@ import CheckoutCancel from "./pages/CheckoutCancel";
 import Folders from "./pages/Folders";
 import Organizations from "./pages/Organizations";
 import Billing from "./pages/Billing";
+import LacunaSettings from "./pages/LacunaSettings";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -40,6 +41,7 @@ const App = () => (
           <Route path="/folders" element={<Folders />} />
           <Route path="/organizations" element={<Organizations />} />
           <Route path="/billing" element={<Billing />} />
+          <Route path="/settings/lacuna" element={<LacunaSettings />} />
           <Route path="/checkout/success" element={<CheckoutSuccess />} />
           <Route path="/checkout/cancel" element={<CheckoutCancel />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
