@@ -60,7 +60,8 @@ export default function LacunaSettings() {
     return <Loading />;
   }
 
-  const isConfigured = statusQuery.data?.status === "ok";
+  const data = statusQuery.data as any;
+  const isConfigured = data?.configured === true || data?.apiKeyConfigured === true;
 
   return (
     <div className="flex min-h-screen bg-background">

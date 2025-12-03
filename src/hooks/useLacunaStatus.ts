@@ -9,9 +9,11 @@ export function useLacunaStatus() {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const isConfigured = statusQuery.data?.status === "ok";
+  // Backend returns { configured: boolean, apiKeyConfigured: boolean, organizationId: string | null }
+  const data = statusQuery.data as any;
+  const isConfigured = data?.configured === true || data?.apiKeyConfigured === true;
   const isLoading = statusQuery.isLoading;
-  const error = statusQuery.data?.message || statusQuery.error?.message;
+  const error = statusQuery.error?.message;
 
   return {
     isConfigured,
