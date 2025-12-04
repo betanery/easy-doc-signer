@@ -21,6 +21,12 @@ export const trpcClient = (trpc as any).createClient({
     httpBatchLink({
       url: TRPC_URL,
       transformer: superjson,
+      fetch(url, options) {
+        return fetch(url, {
+          ...options,
+          credentials: 'include', // Required for CORS
+        });
+      },
       headers() {
         if (typeof window === "undefined") return {};
 
