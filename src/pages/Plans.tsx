@@ -123,7 +123,7 @@ export default function Plans() {
     try {
       setLoadingPlanId(plan.id);
       (checkoutMutation.mutate as any)(
-        { planName: plan.planName, billingInterval: 'monthly' },
+        { planName: plan.planName, billingCycle: 'monthly' },
         {
           onSuccess: (data: any) => {
             if (data?.url) {

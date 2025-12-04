@@ -31,7 +31,7 @@ export default function BillingPage() {
   });
 
   const handleUpgrade = (planName: string) => {
-    (checkoutMutation.mutate as any)({ planName, billingInterval: 'monthly' });
+    (checkoutMutation.mutate as any)({ planName, billingCycle: 'monthly' });
   };
 
   const stats = statsQuery.data as any;
